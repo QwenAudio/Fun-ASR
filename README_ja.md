@@ -12,7 +12,7 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 
 <div align="center">
 <h4>
-<a href="https://funaudiollm.github.io/funasr"> ホームページ </a>
+<a href="https://www.funasr.com/en/"> ホームページ </a>
 ｜<a href="#主要機能"> 主要機能 </a>
 ｜<a href="#性能評価"> 性能評価 </a>
 ｜<a href="#環境構築"> 環境構築 </a>

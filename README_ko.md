@@ -12,7 +12,7 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 
 <div align="center">
 <h4>
-<a href="https://funaudiollm.github.io/funasr"> 홈페이지 </a>
+<a href="https://www.funasr.com/en/"> 홈페이지 </a>
 ｜<a href="#주요-기능"> 주요 기능 </a>
 ｜<a href="#성능-평가"> 성능 평가 </a>
 ｜<a href="#환경-설정"> 환경 설정 </a>

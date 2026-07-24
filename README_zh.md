@@ -10,7 +10,7 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 
 <div align="center">
 <h4>
-<a href="https://funaudiollm.github.io/funasr"> Homepage </a>
+<a href="https://www.funasr.com/"> Homepage </a>
 ｜<a href="#核心特性"> 核心特性 </a>
 ｜<a href="#性能评测"> 性能评测 </a>
 ｜<a href="#环境安装"> 环境安装 </a>

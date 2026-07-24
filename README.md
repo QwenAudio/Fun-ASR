@@ -10,7 +10,7 @@ Fun-ASR is a family of end-to-end speech recognition models from Tongyi Lab. Che
 
 <div align="center">
 <h4>
-<a href="https://funaudiollm.github.io/funasr"> Homepage </a>
+<a href="https://www.funasr.com/en/"> Homepage </a>
 ｜<a href="#core-features"> Core Features </a>
 ｜<a href="#performance-evaluation"> Performance Evaluation </a>
 ｜<a href="#environment-setup"> Environment Setup </a>
