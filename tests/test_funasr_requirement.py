@@ -38,18 +38,17 @@ def test_docs_use_quoted_current_funasr_install_commands():
     assert (ROOT / "examples/README.md").read_text().count('"funasr>=1.3.26"') == 2
 
 
-def test_readmes_surface_funasr_1327_nano_serving_release():
+def test_readmes_surface_funasr_1328_realtime_release():
     required = [
-        "funasr==1.3.27",
-        "AutoModel",
-        "vLLM",
-        "https://github.com/modelscope/FunASR/releases/tag/v1.3.27",
+        "funasr==1.3.28",
+        "STOP",
+        "https://github.com/modelscope/FunASR/releases/tag/v1.3.28",
     ]
     guides = {
-        "README.md": "https://www.funasr.com/en/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html",
-        "README_zh.md": "https://www.funasr.com/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html",
-        "README_ja.md": "https://www.funasr.com/en/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html",
-        "README_ko.md": "https://www.funasr.com/en/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html",
+        "README.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
+        "README_zh.md": "https://www.funasr.com/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
+        "README_ja.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
+        "README_ko.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
     }
     for relpath, guide in guides.items():
         text = (ROOT / relpath).read_text()

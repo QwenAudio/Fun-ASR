@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Fun-ASR!
 
 ### Reporting Bugs
 
-1. Check if the issue already exists in [Issues](https://github.com/FunAudioLLM/Fun-ASR/issues)
+1. Check if the issue already exists in [Issues](https://github.com/QwenAudio/Fun-ASR/issues)
 2. If not, open a new issue with:
    - Your environment (OS, Python, PyTorch, FunASR version)
    - Steps to reproduce
@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Fun-ASR!
 
 ### Suggesting Features
 
-Open a [Discussion](https://github.com/FunAudioLLM/Fun-ASR/discussions) or Issue describing your use case and proposed solution.
+Open a [Discussion](https://github.com/QwenAudio/Fun-ASR/discussions) or Issue describing your use case and proposed solution.
 
 ### Submitting Code
 
@@ -35,7 +35,7 @@ Open a [Discussion](https://github.com/FunAudioLLM/Fun-ASR/discussions) or Issue
 ## Development Setup
 
 ```bash
-git clone https://github.com/FunAudioLLM/Fun-ASR.git
+git clone https://github.com/QwenAudio/Fun-ASR.git
 cd Fun-ASR
 pip install -r requirements.txt
 ```

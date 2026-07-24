@@ -25,7 +25,7 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 온라인 체험:
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FunAudioLLM/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
 
 [실행 가능한 예제](examples/README.md)는 quickstart 추론, 직접 추론, 화자 분리, vLLM 배치 추론, Streaming SDK를 다룹니다.
 
@@ -54,7 +54,7 @@ CPU/엣지 환경에서는 Fun-ASR-Nano를 llama.cpp / GGUF 런타임으로 단�
 # 환경 설정 🐍
 
 ```shell
-git clone https://github.com/FunAudioLLM/Fun-ASR.git
+git clone https://github.com/QwenAudio/Fun-ASR.git
 cd Fun-ASR
 pip install -r requirements.txt
 ```
@@ -63,7 +63,7 @@ pip install -r requirements.txt
 
 # 기능 범위
 
-- **타임스탬프**: 공개된 Nano 체크포인트에는 학습된 CTC 가중치가 없어 체크포인트 기반 문자 단위 타임스탬프를 신뢰할 수 없습니다. 정확한 문자 단위 타임스탬프에는 Paraformer를 사용하세요([issue #106](https://github.com/FunAudioLLM/Fun-ASR/issues/106)).
+- **타임스탬프**: 공개된 Nano 체크포인트에는 학습된 CTC 가중치가 없어 체크포인트 기반 문자 단위 타임스탬프를 신뢰할 수 없습니다. 정확한 문자 단위 타임스탬프에는 Paraformer를 사용하세요([issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)).
 - **화자 분리**: Nano/MLT 체크포인트 자체는 화자 레이블을 출력하지 않습니다. FunASR에서 `fsmn-vad`와 `cam++`를 조합합니다.
 
 # 사용법 🛠️
@@ -127,8 +127,8 @@ Fun-ASR-Nano는 **FunAudioLLM** 패밀리의 일원입니다:
 | 프로젝트 | 설명 | Stars |
 |----------|------|-------|
 | [FunASR](https://github.com/modelscope/FunASR) | 산업용 음성 인식 툴킷 — VAD, ASR, 구두점, 화자 분리 | [![](https://img.shields.io/github/stars/modelscope/FunASR?style=social)](https://github.com/modelscope/FunASR) |
-| [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) | 초고속 ASR + 감정 인식 + 오디오 이벤트 감지 | [![](https://img.shields.io/github/stars/FunAudioLLM/SenseVoice?style=social)](https://github.com/FunAudioLLM/SenseVoice) |
-| [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) | 자연 음성 생성 — 다국어, 제로샷 클로닝 | [![](https://img.shields.io/github/stars/FunAudioLLM/CosyVoice?style=social)](https://github.com/FunAudioLLM/CosyVoice) |
+| [SenseVoice](https://github.com/QwenAudio/SenseVoice) | 초고속 ASR + 감정 인식 + 오디오 이벤트 감지 | [![](https://img.shields.io/github/stars/QwenAudio/SenseVoice?style=social)](https://github.com/QwenAudio/SenseVoice) |
+| [CosyVoice](https://github.com/QwenAudio/CosyVoice) | 자연 음성 생성 — 다국어, 제로샷 클로닝 | [![](https://img.shields.io/github/stars/QwenAudio/CosyVoice?style=social)](https://github.com/QwenAudio/CosyVoice) |
 | [FunClip](https://github.com/modelscope/FunClip) | AI 음성 인식 기반 비디오 클리핑 | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |
 
 ## 라이선스

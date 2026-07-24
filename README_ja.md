@@ -25,7 +25,7 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 オンラインデモ：
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano)、[HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FunAudioLLM/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
 
 [実行可能なサンプル](examples/README.md) では、クイックスタート推論、直接推論、話者分離、vLLM バッチ推論、Streaming SDK を確認できます。
 
@@ -55,7 +55,7 @@ CPU/エッジ端末では、Fun-ASR-Nano を llama.cpp / GGUF ランタイムで
 # 環境構築 🐍
 
 ```shell
-git clone https://github.com/FunAudioLLM/Fun-ASR.git
+git clone https://github.com/QwenAudio/Fun-ASR.git
 cd Fun-ASR
 pip install -r requirements.txt
 ```
@@ -64,7 +64,7 @@ pip install -r requirements.txt
 
 # 機能の境界
 
-- **タイムスタンプ**：公開済みNano checkpointには学習済みCTC重みが含まれないため、checkpoint由来の文字単位タイムスタンプは信頼できません。正確な文字単位タイムスタンプにはParaformerを使用してください（[issue #106](https://github.com/FunAudioLLM/Fun-ASR/issues/106)）。
+- **タイムスタンプ**：公開済みNano checkpointには学習済みCTC重みが含まれないため、checkpoint由来の文字単位タイムスタンプは信頼できません。正確な文字単位タイムスタンプにはParaformerを使用してください（[issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)）。
 - **話者分離**：Nano/MLT checkpoint自体は話者ラベルを出力しません。FunASRで`fsmn-vad`と`cam++`を組み合わせます。
 
 # 使い方 🛠️
@@ -143,8 +143,8 @@ Fun-ASR-Nanoは **FunAudioLLM** ファミリーの一員です：
 | プロジェクト | 説明 | Stars |
 |-------------|------|-------|
 | [FunASR](https://github.com/modelscope/FunASR) | 産業用音声認識ツールキット — VAD、ASR、句読点、話者分離 | [![](https://img.shields.io/github/stars/modelscope/FunASR?style=social)](https://github.com/modelscope/FunASR) |
-| [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) | 超高速ASR + 感情認識 + 音声イベント検出 | [![](https://img.shields.io/github/stars/FunAudioLLM/SenseVoice?style=social)](https://github.com/FunAudioLLM/SenseVoice) |
-| [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) | 自然音声生成 — 多言語、ゼロショットクローニング | [![](https://img.shields.io/github/stars/FunAudioLLM/CosyVoice?style=social)](https://github.com/FunAudioLLM/CosyVoice) |
+| [SenseVoice](https://github.com/QwenAudio/SenseVoice) | 超高速ASR + 感情認識 + 音声イベント検出 | [![](https://img.shields.io/github/stars/QwenAudio/SenseVoice?style=social)](https://github.com/QwenAudio/SenseVoice) |
+| [CosyVoice](https://github.com/QwenAudio/CosyVoice) | 自然音声生成 — 多言語、ゼロショットクローニング | [![](https://img.shields.io/github/stars/QwenAudio/CosyVoice?style=social)](https://github.com/QwenAudio/CosyVoice) |
 | [FunClip](https://github.com/modelscope/FunClip) | AI音声認識による動画クリッピング | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |
 
 ## ライセンス

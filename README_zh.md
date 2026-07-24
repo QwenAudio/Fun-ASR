@@ -39,7 +39,7 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 - 2026/07：**FunASR 1.3.28 提升实时转写稳定性** — WebSocket 服务会在 VAD 锁定的最终解码发生退化时保留稳定文本，在收到 `STOP` 后解码短尾音频，并显式处理连接关闭。安装命令：`pip install -U "funasr==1.3.28"`。[发布说明](https://github.com/modelscope/FunASR/releases/tag/v1.3.28) · [部署指南](https://www.funasr.com/blog/funasr-v1-3-28-realtime-websocket-subtitles.html) · [PyPI](https://pypi.org/project/funasr/1.3.28/)
 - 2026/07：**FunASR 1.3.27 提升 Fun-ASR-Nano 服务可靠性** — vLLM 启动失败后，OpenAI 兼容服务会复用同一个 `AutoModel` 缓存回退，而不是重复构建模型；vLLM/VAD 部分初始化失败后仍可重试。安装命令：`pip install -U "funasr==1.3.27"`。[发布说明](https://github.com/modelscope/FunASR/releases/tag/v1.3.27) · [部署指南](https://www.funasr.com/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html) · [PyPI](https://pypi.org/project/funasr/1.3.27/)
 - 2026/07: **Hugging Face Transformers 原生集成正在审查中** — Fun-ASR-Nano 模型实现进度见 [transformers#46180](https://github.com/huggingface/transformers/pull/46180)。在正式进入 Transformers release 前，请使用下方 FunASR、[vLLM](docs/vllm_guide_zh.md) 或 [llama.cpp / GGUF](./runtime/llama.cpp/) 路径完成可运行推理。
-- 2026/06: **Fun-ASR-Nano on llama.cpp / GGUF** — 支持在 CPU/边缘设备上以单个自包含二进制运行（类似 whisper.cpp），内置 VAD，运行时无需 Python。量化模型最小约 484 MB。[runtime/llama.cpp/](./runtime/llama.cpp/) · [Releases](https://github.com/FunAudioLLM/Fun-ASR/releases) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
+- 2026/06: **Fun-ASR-Nano on llama.cpp / GGUF** — 支持在 CPU/边缘设备上以单个自包含二进制运行（类似 whisper.cpp），内置 VAD，运行时无需 Python。量化模型最小约 484 MB。[runtime/llama.cpp/](./runtime/llama.cpp/) · [Releases](https://github.com/QwenAudio/Fun-ASR/releases) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
 - 2026/05: **vLLM 推理引擎** — 原生高吞吐批量推理（3-5 倍加速）+ WebSocket 实时流式服务。参见 [vLLM 指南](docs/vllm_guide.md)。
 - 2026/05: FunASR pipeline 可将 Fun-ASR-Nano 与独立的 FSMN-VAD、CAM++ 和标点模型组合，生成逐句说话人标签；说话人分离并非 Nano checkpoint 的原生输出。需从源码安装 FunASR：`pip install git+https://github.com/modelscope/FunASR.git`
 - 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) 上线，支持中文、英文、日文及中文方言和地域口音。31 语种识别请使用独立的 [Fun-ASR-MLT-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) checkpoint。
@@ -59,7 +59,7 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 # 环境安装 🐍
 
 ```shell
-git clone https://github.com/FunAudioLLM/Fun-ASR.git
+git clone https://github.com/QwenAudio/Fun-ASR.git
 cd Fun-ASR
 pip install -r requirements.txt
 ```
@@ -69,7 +69,7 @@ pip install -r requirements.txt
 # 能力边界
 
 - [ ] 可靠的 checkpoint 原生时间戳
-  > 当前发布的 Fun-ASR-Nano `model.pt` checkpoint 不包含已训练的 `ctc_decoder.*` / `ctc.*` 权重，因此其时间戳输出并不可靠。需要准确的字级时间戳时，请改用 Paraformer，例如 `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`。详情见 [issue #106](https://github.com/FunAudioLLM/Fun-ASR/issues/106)。
+  > 当前发布的 Fun-ASR-Nano `model.pt` checkpoint 不包含已训练的 `ctc_decoder.*` / `ctc.*` 权重，因此其时间戳输出并不可靠。需要准确的字级时间戳时，请改用 Paraformer，例如 `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`。详情见 [issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)。
 - [ ] checkpoint 原生说话人分离
   > Fun-ASR-Nano 和 Fun-ASR-MLT-Nano 本身不输出说话人标签；需在 FunASR 中组合独立的 `fsmn-vad` 与 `cam++` 模型。
 - [x] 支持模型训练
@@ -93,7 +93,7 @@ llama-funasr-cli --enc ./gguf/funasr-encoder-f16.gguf -m ./gguf/qwen3-0.6b-q8_0.
 hf download FunAudioLLM/fsmn-vad-GGUF --include "*.gguf" --local-dir ./gguf
 ```
 
-**预编译二进制：** [Releases](https://github.com/FunAudioLLM/Fun-ASR/releases) · **下载与快速开始：** [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · **GGUF：** [Nano encoder/LLM](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF) · **文档与 benchmark：** [runtime/llama.cpp/](./runtime/llama.cpp/)
+**预编译二进制：** [Releases](https://github.com/QwenAudio/Fun-ASR/releases) · **下载与快速开始：** [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · **GGUF：** [Nano encoder/LLM](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF) · **文档与 benchmark：** [runtime/llama.cpp/](./runtime/llama.cpp/)
 
 ### 使用 funasr 推理
 
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
 ## 优秀三方工作
 
-- **[Fun-ASR-vllm](https://github.com/yuekaizhang/Fun-ASR-vllm)**（[@yuekaizhang](https://github.com/yuekaizhang)）— 社区实现的 Fun-ASR vLLM 方案，支持批量推理和 NVIDIA Triton Inference Server 高并发部署。参见 [#34](https://github.com/FunAudioLLM/Fun-ASR/issues/34)。
+- **[Fun-ASR-vllm](https://github.com/yuekaizhang/Fun-ASR-vllm)**（[@yuekaizhang](https://github.com/yuekaizhang)）— 社区实现的 Fun-ASR vLLM 方案，支持批量推理和 NVIDIA Triton Inference Server 高并发部署。参见 [#34](https://github.com/QwenAudio/Fun-ASR/issues/34)。
 
 > Fun-ASR 也已内置原生 vLLM 支持，包括 `AutoModelVLLM` 批量推理、Streaming SDK 和 WebSocket 服务；请参考 [vLLM 中文指南](docs/vllm_guide_zh.md) 与 [可运行示例脚本](examples/README.md)。
 

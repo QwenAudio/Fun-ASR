@@ -23,7 +23,7 @@ Model repositories: **Fun-ASR-Nano** ([ModelScope](https://www.modelscope.cn/mod
 Online Experience:
 [ModelScope Community Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [huggingface space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/FunAudioLLM/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
 
 [Runnable examples](examples/README.md) cover quickstart inference, direct inference, speaker diarization, vLLM batch inference, and the streaming SDK.
 
@@ -41,7 +41,7 @@ Online Experience:
 - 2026/07: **FunASR 1.3.28 hardens real-time transcription** — the WebSocket server now preserves stable final text when a VAD-locked final pass regresses, decodes short tails on `STOP`, and handles closed connections explicitly. Install with `pip install -U "funasr==1.3.28"`. [Release notes](https://github.com/modelscope/FunASR/releases/tag/v1.3.28) · [deployment guide](https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html) · [PyPI](https://pypi.org/project/funasr/1.3.28/)
 - 2026/07: **FunASR 1.3.27 improves Fun-ASR-Nano serving reliability** — after a vLLM startup failure, the OpenAI-compatible server reuses one cached fallback `AutoModel` instead of rebuilding it; partial vLLM/VAD initialization remains retryable. Install with `pip install -U "funasr==1.3.27"`. [Release notes](https://github.com/modelscope/FunASR/releases/tag/v1.3.27) · [deployment guide](https://www.funasr.com/en/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html) · [PyPI](https://pypi.org/project/funasr/1.3.27/)
 - 2026/07: **Native Hugging Face Transformers integration is in review** — track [transformers#46180](https://github.com/huggingface/transformers/pull/46180) for the Fun-ASR-Nano model implementation. Until it lands in an official Transformers release, use the FunASR, [vLLM](docs/vllm_guide.md), or [llama.cpp / GGUF](./runtime/llama.cpp/) paths below for runnable inference.
-- 2026/06: **Fun-ASR-Nano on llama.cpp / GGUF** — run it on CPU/edge as a single self-contained binary (whisper.cpp-style), built-in VAD, no Python at runtime. Quantized models down to ~484 MB. [runtime/llama.cpp/](./runtime/llama.cpp/) · [Releases](https://github.com/FunAudioLLM/Fun-ASR/releases) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
+- 2026/06: **Fun-ASR-Nano on llama.cpp / GGUF** — run it on CPU/edge as a single self-contained binary (whisper.cpp-style), built-in VAD, no Python at runtime. Quantized models down to ~484 MB. [runtime/llama.cpp/](./runtime/llama.cpp/) · [Releases](https://github.com/QwenAudio/Fun-ASR/releases) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
 - 2026/05: **vLLM Inference Engine** — native high-throughput batch (3-5x faster) + WebSocket real-time streaming service. See [vLLM Guide](docs/vllm_guide.md).
 - 2026/05: The FunASR pipeline can combine Fun-ASR-Nano with separate FSMN-VAD, CAM++, and punctuation models to produce per-sentence speaker labels. Diarization is not a native output of the Nano checkpoint. Requires installing FunASR from source: `pip install git+https://github.com/modelscope/FunASR.git`
 - 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) was released for Chinese, English, Japanese, and Chinese dialects and accents. For 31-language recognition, use the separate [Fun-ASR-MLT-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) checkpoint.
@@ -61,7 +61,7 @@ Online Experience:
 # Environment Setup 🐍
 
 ```shell
-git clone https://github.com/FunAudioLLM/Fun-ASR.git
+git clone https://github.com/QwenAudio/Fun-ASR.git
 cd Fun-ASR
 pip install -r requirements.txt
 ```
@@ -71,7 +71,7 @@ pip install -r requirements.txt
 # Capability boundaries
 
 - [ ] Reliable checkpoint-native timestamps
-  > The released Fun-ASR-Nano `model.pt` checkpoint does not include trained `ctc_decoder.*` / `ctc.*` weights. Any timestamp output is therefore not reliable. For accurate character-level timestamps, use Paraformer, for example `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`. See [issue #106](https://github.com/FunAudioLLM/Fun-ASR/issues/106).
+  > The released Fun-ASR-Nano `model.pt` checkpoint does not include trained `ctc_decoder.*` / `ctc.*` weights. Any timestamp output is therefore not reliable. For accurate character-level timestamps, use Paraformer, for example `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`. See [issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106).
 - [ ] Checkpoint-native speaker diarization
   > Fun-ASR-Nano and Fun-ASR-MLT-Nano do not emit speaker labels by themselves. Compose them in FunASR with the separate `fsmn-vad` and `cam++` models, as shown below.
 - [x] Model training
@@ -95,7 +95,7 @@ llama-funasr-cli --enc ./gguf/funasr-encoder-f16.gguf -m ./gguf/qwen3-0.6b-q8_0.
 hf download FunAudioLLM/fsmn-vad-GGUF --include "*.gguf" --local-dir ./gguf
 ```
 
-**Prebuilt binaries:** [Releases](https://github.com/FunAudioLLM/Fun-ASR/releases) · **Download & quickstart:** [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · **GGUF:** [Nano encoder/LLM](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF) · **Docs & benchmarks:** [runtime/llama.cpp/](./runtime/llama.cpp/)
+**Prebuilt binaries:** [Releases](https://github.com/QwenAudio/Fun-ASR/releases) · **Download & quickstart:** [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · **GGUF:** [Nano encoder/LLM](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF) · **Docs & benchmarks:** [runtime/llama.cpp/](./runtime/llama.cpp/)
 
 ### Using funasr for inference
 
@@ -372,7 +372,7 @@ We evaluated Fun-ASR against other state-of-the-art models on open-source benchm
 
 ## Remarkable Third-Party Work
 
-- **[Fun-ASR-vllm](https://github.com/yuekaizhang/Fun-ASR-vllm)** ([@yuekaizhang](https://github.com/yuekaizhang)) — a community vLLM implementation of Fun-ASR (~50% speedup over PyTorch), with batch inference and an NVIDIA Triton Inference Server integration for high-concurrency production deployment. See [#34](https://github.com/FunAudioLLM/Fun-ASR/issues/34).
+- **[Fun-ASR-vllm](https://github.com/yuekaizhang/Fun-ASR-vllm)** ([@yuekaizhang](https://github.com/yuekaizhang)) — a community vLLM implementation of Fun-ASR (~50% speedup over PyTorch), with batch inference and an NVIDIA Triton Inference Server integration for high-concurrency production deployment. See [#34](https://github.com/QwenAudio/Fun-ASR/issues/34).
 
 > Native vLLM support is also built in — see [vLLM High-Throughput Inference 🚀](#vllm-high-throughput-inference-) above for the `AutoModelVLLM` batch engine, the streaming SDK, and the WebSocket service.
 
@@ -383,15 +383,15 @@ Fun-ASR-Nano is part of the **FunAudioLLM** family:
 | Project | Description | Stars |
 |---------|-------------|-------|
 | [FunASR](https://github.com/modelscope/FunASR) | Industrial speech recognition toolkit — VAD, ASR, punctuation, diarization | [![](https://img.shields.io/github/stars/modelscope/FunASR?style=social)](https://github.com/modelscope/FunASR) |
-| [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) | Multilingual speech understanding — ASR + emotion + audio events | [![](https://img.shields.io/github/stars/FunAudioLLM/SenseVoice?style=social)](https://github.com/FunAudioLLM/SenseVoice) |
-| [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) | Natural speech generation — multi-language, zero-shot cloning | [![](https://img.shields.io/github/stars/FunAudioLLM/CosyVoice?style=social)](https://github.com/FunAudioLLM/CosyVoice) |
+| [SenseVoice](https://github.com/QwenAudio/SenseVoice) | Multilingual speech understanding — ASR + emotion + audio events | [![](https://img.shields.io/github/stars/QwenAudio/SenseVoice?style=social)](https://github.com/QwenAudio/SenseVoice) |
+| [CosyVoice](https://github.com/QwenAudio/CosyVoice) | Natural speech generation — multi-language, zero-shot cloning | [![](https://img.shields.io/github/stars/QwenAudio/CosyVoice?style=social)](https://github.com/QwenAudio/CosyVoice) |
 | [FunClip](https://github.com/modelscope/FunClip) | AI-powered video clipping with speech recognition | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |
 
-<a href="https://star-history.com/#FunAudioLLM/Fun-ASR&modelscope/FunASR&FunAudioLLM/SenseVoice&Date">
+<a href="https://star-history.com/#QwenAudio/Fun-ASR&modelscope/FunASR&QwenAudio/SenseVoice&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=FunAudioLLM/Fun-ASR,modelscope/FunASR,FunAudioLLM/SenseVoice&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=FunAudioLLM/Fun-ASR,modelscope/FunASR,FunAudioLLM/SenseVoice&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=FunAudioLLM/Fun-ASR,modelscope/FunASR,FunAudioLLM/SenseVoice&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
   </picture>
 </a>
 
