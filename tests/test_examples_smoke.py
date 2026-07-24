@@ -83,3 +83,20 @@ class RunnableExamplesSmokeTest(unittest.TestCase):
             for link in required_links:
                 with self.subTest(readme=readme_path, link=link):
                     self.assertIn(link, readme)
+
+    def test_vllm_guides_clone_canonical_service_scripts_before_use(self):
+        script_dir = "examples/industrial_data_pretraining/fun_asr_nano"
+        required = [
+            "git clone --depth 1 https://github.com/modelscope/FunASR.git",
+            "https://github.com/modelscope/FunASR/tree/main/" + script_dir,
+            script_dir + "/serve_vllm.py",
+            script_dir + "/serve_realtime_ws.py",
+            'pip install "vllm>=0.12.0"',
+        ]
+        for relpath in ("docs/vllm_guide.md", "docs/vllm_guide_zh.md"):
+            text = (ROOT / relpath).read_text(encoding="utf-8")
+            for marker in required:
+                with self.subTest(guide=relpath, marker=marker):
+                    self.assertIn(marker, text)
+            self.assertNotIn("pip install vllm>=0.12.0", text)
+            self.assertLess(text.index("git clone --depth 1"), text.index(f"cd {script_dir}"))

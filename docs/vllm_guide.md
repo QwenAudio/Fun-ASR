@@ -36,11 +36,15 @@
 
 ```bash
 pip install "funasr>=1.3.26"
-pip install vllm>=0.12.0
+pip install "vllm>=0.12.0"
 pip install safetensors tiktoken websockets regex fastapi uvicorn python-multipart
 
-cd /path/to/FunASR && pip install -e .
+git clone --depth 1 https://github.com/modelscope/FunASR.git
+cd FunASR
+pip install -e .
 ```
+
+> This model repository does not vendor the service scripts used below. The runnable `demo_vllm.py`, `serve_vllm.py`, `serve_realtime_ws.py`, and clients are maintained in the [canonical FunASR example directory](https://github.com/modelscope/FunASR/tree/main/examples/industrial_data_pretraining/fun_asr_nano). Run the remaining shell commands from the FunASR clone created above.
 
 **Hardware**: GPU ≥ 8 GB VRAM, CUDA ≥ 11.8. 16 GB+ recommended.
 
