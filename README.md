@@ -387,11 +387,11 @@ Fun-ASR-Nano is part of the **FunAudioLLM** family:
 | [CosyVoice](https://github.com/QwenAudio/CosyVoice) | Natural speech generation — multi-language, zero-shot cloning | [![](https://img.shields.io/github/stars/QwenAudio/CosyVoice?style=social)](https://github.com/QwenAudio/CosyVoice) |
 | [FunClip](https://github.com/modelscope/FunClip) | AI-powered video clipping with speech recognition | [![](https://img.shields.io/github/stars/modelscope/FunClip?style=social)](https://github.com/modelscope/FunClip) |
 
-<a href="https://star-history.com/#QwenAudio/Fun-ASR&modelscope/FunASR&QwenAudio/SenseVoice&Date">
+<a href="https://star-history.dera.page/#QwenAudio/Fun-ASR&modelscope/FunASR&QwenAudio/SenseVoice&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=QwenAudio/Fun-ASR,modelscope/FunASR,QwenAudio/SenseVoice&type=Date" />
   </picture>
 </a>
 
