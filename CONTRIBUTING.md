@@ -12,6 +12,15 @@ Thank you for your interest in contributing to Fun-ASR!
    - Steps to reproduce
    - Expected vs actual behavior
 
+### Resolving Issues
+
+A merged pull request, a green `main` branch, or an available release does not by itself prove that a reported problem is resolved. Keep user-reported issues open until either:
+
+- the reporter confirms the fix on the affected workflow; or
+- a maintainer reproduces the original failure, verifies the fix in a publicly available version, records the evidence in the issue, and allows a reasonable feedback window.
+
+When a fix needs a release, link the released version and ask the reporter to retest before closing. Use a waiting-for-feedback label when available instead of treating silence as confirmation.
+
 ### Suggesting Features
 
 Open a [Discussion](https://github.com/QwenAudio/Fun-ASR/discussions) or Issue describing your use case and proposed solution.
