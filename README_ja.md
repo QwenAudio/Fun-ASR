@@ -64,7 +64,7 @@ pip install -r requirements.txt
 
 # 機能の境界
 
-- **タイムスタンプ**：公開済みNano checkpointには学習済みCTC重みが含まれないため、checkpoint由来の文字単位タイムスタンプは信頼できません。正確な文字単位タイムスタンプにはParaformerを使用してください（[issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)）。
+- **タイムスタンプ（配布元ごとの状態）**：現在のModelScope版`FunAudioLLM/Fun-ASR-Nano-2512`には、学習済みの`ctc_decoder.*` / `ctc.*`全86テンソルが含まれています（`model.pt` SHA-256：`81fec8616083c69377f3ceef36aba3655660ee0ca69a5d4a1e9810cd340ca499`）。一方、Hugging Face revision `272c57b82523ada6fd87095e955f8e29100979ab`はCTCテンソルを含まない旧テキスト専用版です（SHA-256：`55ae0d2fee369f0f11cce0795f6927934ad17cf11b278a7e56a51272074160bb`）。このリポジトリの現在の`model.py`を`funasr>=1.3.26`と共に使用すると、不完全なcheckpointのCTCを無効化し、転写テキストは返しますが、ランダムな60 msタイムスタンプは返しません。Hugging Faceの重みとremote codeの同期が完了するまでは、文字単位タイムスタンプに`hub="ms"`を使用してください（[issue #70](https://github.com/QwenAudio/Fun-ASR/issues/70)、[FunASR #3496](https://github.com/modelscope/FunASR/issues/3496)）。
 - **話者分離**：Nano/MLT checkpoint自体は話者ラベルを出力しません。FunASRで`fsmn-vad`と`cam++`を組み合わせます。
 
 # 使い方 🛠️

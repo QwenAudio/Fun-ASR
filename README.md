@@ -70,8 +70,8 @@ pip install -r requirements.txt
 
 # Capability boundaries
 
-- [ ] Reliable checkpoint-native timestamps
-  > The released Fun-ASR-Nano `model.pt` checkpoint does not include trained `ctc_decoder.*` / `ctc.*` weights. Any timestamp output is therefore not reliable. For accurate character-level timestamps, use Paraformer, for example `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`. See [issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106).
+- [x] Checkpoint-native character timestamps (hub-specific checkpoint state)
+  > The current ModelScope `FunAudioLLM/Fun-ASR-Nano-2512` checkpoint includes all 86 trained `ctc_decoder.*` / `ctc.*` tensors (`model.pt` SHA-256 `81fec8616083c69377f3ceef36aba3655660ee0ca69a5d4a1e9810cd340ca499`) and produces native CTC timestamps. The Hugging Face checkpoint at revision `272c57b82523ada6fd87095e955f8e29100979ab` is still the older text-only artifact (`model.pt` SHA-256 `55ae0d2fee369f0f11cce0795f6927934ad17cf11b278a7e56a51272074160bb`) with no CTC tensors. When this repository's current `model.py` is used with `funasr>=1.3.26`, incomplete checkpoints fail closed: transcription remains available, but `timestamps` are omitted instead of returning random 60 ms alignments. Use `hub="ms"` for checkpoint-native timestamps until the Hugging Face artifact and remote code are synchronized. See [issue #70](https://github.com/QwenAudio/Fun-ASR/issues/70) and [FunASR #3496](https://github.com/modelscope/FunASR/issues/3496).
 - [ ] Checkpoint-native speaker diarization
   > Fun-ASR-Nano and Fun-ASR-MLT-Nano do not emit speaker labels by themselves. Compose them in FunASR with the separate `fsmn-vad` and `cam++` models, as shown below.
 - [x] Model training

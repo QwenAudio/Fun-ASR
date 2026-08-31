@@ -23,6 +23,52 @@ from tools.utils import forced_align
 dtype_map = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}
 
 
+def _normalize_checkpoint_state(state):
+    while isinstance(state, dict):
+        wrapped = next(
+            (
+                state[key]
+                for key in ("state_dict", "model_state_dict", "model")
+                if isinstance(state.get(key), dict)
+            ),
+            None,
+        )
+        if wrapped is None or wrapped is state:
+            break
+        state = wrapped
+
+    return {
+        key[len("module.") :] if key.startswith("module.") else key: value
+        for key, value in state.items()
+    }
+
+
+def _disable_incomplete_ctc(model, loaded_keys):
+    if model.ctc_decoder is None or model.ctc is None:
+        return
+
+    expected = {f"ctc_decoder.{key}" for key in model.ctc_decoder.state_dict()}
+    expected.update(f"ctc.{key}" for key in model.ctc.state_dict())
+    missing = sorted(expected.difference(loaded_keys))
+    if not missing:
+        return
+
+    preview = ", ".join(missing[:3])
+    suffix = "" if len(missing) <= 3 else ", ..."
+    logging.warning(
+        "Disabling CTC timestamps because the checkpoint did not initialize "
+        "%d of %d required CTC tensors (%s%s). Text transcription remains available.",
+        len(missing),
+        len(expected),
+        preview,
+        suffix,
+    )
+    model.ctc_decoder = None
+    model.ctc = None
+    model.ctc_tokenizer = None
+    model.blank_id = None
+
+
 @tables.register("model_classes", "FunASRNano")
 class FunASRNano(nn.Module):
     def __init__(
@@ -107,6 +153,7 @@ class FunASRNano(nn.Module):
 
         # ctc decoder
         self.ctc_decoder = None
+        self._externally_loaded_ctc_keys = set()
         # TODO: fix table name
         ctc_decoder_class = tables.adaptor_classes.get(kwargs.get("ctc_decoder", None))
         if ctc_decoder_class is not None:
@@ -133,8 +180,15 @@ class FunASRNano(nn.Module):
             self.ctc_decoder = ctc_decoder_class(**ctc_decoder_conf)
             init_param_path = ctc_decoder_conf.get("init_param_path", None)
             if init_param_path is not None:
-                src_state = torch.load(init_param_path, map_location="cpu")
+                src_state = _normalize_checkpoint_state(
+                    torch.load(init_param_path, map_location="cpu")
+                )
                 flag = self.ctc_decoder.load_state_dict(src_state, strict=False)
+                self._externally_loaded_ctc_keys.update(
+                    f"ctc_decoder.{key}"
+                    for key in self.ctc_decoder.state_dict()
+                    if key in src_state
+                )
                 logging.info(f"Loading ctc_decoder ckpt: {init_param_path}, status: {flag}")
             freeze = ctc_decoder_conf.get("freeze", False)
             if freeze:
@@ -157,6 +211,11 @@ class FunASRNano(nn.Module):
         self.length_normalized_loss = length_normalized_loss
         rank = int(os.environ.get("RANK", 0))
         logging.info(f"rank: {rank}, model is builded.")
+
+    def on_pretrained_model_loaded(self, loaded_keys):
+        """Disable timestamp inference when the checkpoint lacks trained CTC weights."""
+        loaded_keys = set(loaded_keys).union(self._externally_loaded_ctc_keys)
+        _disable_incomplete_ctc(self, loaded_keys)
 
     def forward(
         self,
