@@ -68,8 +68,8 @@ pip install -r requirements.txt
 
 # 能力边界
 
-- [ ] 可靠的 checkpoint 原生时间戳
-  > 当前发布的 Fun-ASR-Nano `model.pt` checkpoint 不包含已训练的 `ctc_decoder.*` / `ctc.*` 权重，因此其时间戳输出并不可靠。需要准确的字级时间戳时，请改用 Paraformer，例如 `AutoModel(model="paraformer-zh", vad_model="fsmn-vad", ...)`。详情见 [issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)。
+- [x] checkpoint 原生字级时间戳（需区分模型托管源）
+  > 当前 ModelScope `FunAudioLLM/Fun-ASR-Nano-2512` checkpoint 已包含全部 86 个训练后的 `ctc_decoder.*` / `ctc.*` 张量（`model.pt` SHA-256：`81fec8616083c69377f3ceef36aba3655660ee0ca69a5d4a1e9810cd340ca499`），可以输出原生 CTC 时间戳。Hugging Face revision `272c57b82523ada6fd87095e955f8e29100979ab` 仍是旧的纯文本权重（`model.pt` SHA-256：`55ae0d2fee369f0f11cce0795f6927934ad17cf11b278a7e56a51272074160bb`），不含 CTC 张量。使用本仓库当前 `model.py` 与 `funasr>=1.3.26` 时，不完整 checkpoint 会安全关闭 CTC：文本转写继续可用，但不会再返回随机的 60 ms 时间戳。Hugging Face 权重和远程代码同步前，需要原生时间戳请使用 `hub="ms"`。详见 [issue #70](https://github.com/QwenAudio/Fun-ASR/issues/70) 与 [FunASR #3496](https://github.com/modelscope/FunASR/issues/3496)。
 - [ ] checkpoint 原生说话人分离
   > Fun-ASR-Nano 和 Fun-ASR-MLT-Nano 本身不输出说话人标签；需在 FunASR 中组合独立的 `fsmn-vad` 与 `cam++` 模型。
 - [x] 支持模型训练

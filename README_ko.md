@@ -63,7 +63,7 @@ pip install -r requirements.txt
 
 # 기능 범위
 
-- **타임스탬프**: 공개된 Nano 체크포인트에는 학습된 CTC 가중치가 없어 체크포인트 기반 문자 단위 타임스탬프를 신뢰할 수 없습니다. 정확한 문자 단위 타임스탬프에는 Paraformer를 사용하세요([issue #106](https://github.com/QwenAudio/Fun-ASR/issues/106)).
+- **타임스탬프(호스팅 소스별 상태)**: 현재 ModelScope의 `FunAudioLLM/Fun-ASR-Nano-2512` 체크포인트에는 학습된 `ctc_decoder.*` / `ctc.*` 텐서 86개가 모두 포함되어 있습니다(`model.pt` SHA-256: `81fec8616083c69377f3ceef36aba3655660ee0ca69a5d4a1e9810cd340ca499`). 반면 Hugging Face revision `272c57b82523ada6fd87095e955f8e29100979ab`는 CTC 텐서가 없는 이전 텍스트 전용 아티팩트입니다(SHA-256: `55ae0d2fee369f0f11cce0795f6927934ad17cf11b278a7e56a51272074160bb`). 이 저장소의 현재 `model.py`를 `funasr>=1.3.26`과 함께 사용하면 불완전한 체크포인트의 CTC를 비활성화하여 텍스트 전사는 유지하되 임의의 60 ms 타임스탬프는 반환하지 않습니다. Hugging Face 가중치와 remote code가 동기화되기 전에는 문자 단위 타임스탬프에 `hub="ms"`를 사용하세요([issue #70](https://github.com/QwenAudio/Fun-ASR/issues/70), [FunASR #3496](https://github.com/modelscope/FunASR/issues/3496)).
 - **화자 분리**: Nano/MLT 체크포인트 자체는 화자 레이블을 출력하지 않습니다. FunASR에서 `fsmn-vad`와 `cam++`를 조합합니다.
 
 # 사용법 🛠️
