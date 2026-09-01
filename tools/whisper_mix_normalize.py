@@ -1,16 +1,21 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/python
-# Author: Mengze Chen
+#!/usr/bin/env python3
+"""Normalize ASR transcripts before WER/CER scoring."""
 
+import argparse
 import re
-import sys
+from pathlib import Path
 
-import cn_tn as cn_tn
-import format5res as cn_itn
 import pyopenjtalk
 import zhconv
 from whisper_normalizer.basic import BasicTextNormalizer
 from whisper_normalizer.english import EnglishTextNormalizer
+
+if __package__:
+    from . import cn_tn
+    from . import format5res as cn_itn
+else:  # Support ``python tools/whisper_mix_normalize.py``.
+    import cn_tn
+    import format5res as cn_itn
 
 basic_normalizer = BasicTextNormalizer()
 english_normalizer = EnglishTextNormalizer()
@@ -37,44 +42,98 @@ def is_number(s):
     return re.match(pattern, s) is not None
 
 
-def safe_ja_g2p(text, kana=True, max_length=100):
+def configure_open_jtalk_dict(dict_dir):
+    """Create an OpenJTalk frontend for an explicit system dictionary."""
+    if dict_dir is None:
+        return None
+
+    dict_path = Path(dict_dir).expanduser().absolute()
+    if not (dict_path / "sys.dic").is_file():
+        raise RuntimeError(f"OpenJTalk dictionary is missing sys.dic: {dict_path}")
+
+    # Do not mutate OPEN_JTALK_DICT_DIR or _global_jtalk. The package caches its
+    # global frontend after the first g2p call, so changing the global path can
+    # silently leave a previously initialized dictionary in use.
+    return pyopenjtalk.OpenJTalk(dn_mecab=str(dict_path).encode("utf-8"))
+
+
+def safe_ja_g2p(text, kana=True, max_length=100, jtalk=None):
+    """Convert Japanese text with OpenJTalk and fail on conversion errors."""
+
+    def convert(part):
+        if jtalk is not None:
+            return jtalk.g2p(part, kana=kana)
+        return pyopenjtalk.g2p(part, kana=kana)
+
     if len(text) > max_length:
-        # 如果文本过长，分段处理
         parts = []
         for i in range(0, len(text), max_length):
-            part = text[i:i+max_length]
+            part = text[i : i + max_length]
             try:
-                converted = pyopenjtalk.g2p(part, kana=kana)
+                converted = convert(part)
                 parts.append(converted)
-            except Exception:
-                parts.append(part)  # 如果转换失败，使用原文本
-        return ' '.join(parts)
-    else:
-        try:
-            return pyopenjtalk.g2p(text, kana=kana)
-        except Exception:
-            return text  # 如果转换失败，返回原文本
+            except Exception as exc:
+                raise RuntimeError(
+                    f"OpenJTalk failed to normalize Japanese text: {part[:80]!r}"
+                ) from exc
+        return " ".join(parts)
+
+    try:
+        return convert(text)
+    except Exception as exc:
+        raise RuntimeError(
+            f"OpenJTalk failed to normalize Japanese text: {text[:80]!r}"
+        ) from exc
 
 
-def normalize_text(srcfn, dstfn, kana=False):
-    with open(srcfn, "r") as f_read, open(dstfn, "w") as f_write:
+def normalize_text(
+    srcfn,
+    dstfn,
+    kana=False,
+    open_jtalk_dict=None,
+    input_format="id-text",
+):
+    """Normalize an utterance transcript file for ASR scoring."""
+    jtalk = configure_open_jtalk_dict(open_jtalk_dict) if kana else None
+    if input_format not in {"id-text", "path-id-text"}:
+        raise ValueError(f"unsupported input format: {input_format}")
+
+    with (
+        open(srcfn, "r", encoding="utf-8") as f_read,
+        open(dstfn, "w", encoding="utf-8") as f_write,
+    ):
         all_lines = f_read.readlines()
-        for line in all_lines:
+        for line_number, line in enumerate(all_lines, start=1):
             line = line.strip()
-            line_arr = line.split(maxsplit=1)
-            if len(line_arr) < 1:
+            if not line:
                 continue
-            if len(line_arr) == 1:
-                line_arr.append("")
-            key = line_arr[0]
-            line_arr[1] = re.sub(r"=", " ", line_arr[1])
-            line_arr[1] = re.sub(r"\(", " ", line_arr[1])
-            line_arr[1] = re.sub(r"\)", " ", line_arr[1])
+
+            if input_format == "path-id-text":
+                fields = line.split(maxsplit=2)
+                if len(fields) < 2:
+                    raise ValueError(
+                        f"line {line_number} requires audio-path and utterance-id"
+                    )
+                key = fields[1]
+                text = fields[2] if len(fields) == 3 else ""
+            else:
+                fields = line.split(maxsplit=1)
+                key = fields[0]
+                text = fields[1] if len(fields) == 2 else ""
+
+            text = re.sub(r"=", " ", text)
+            text = re.sub(r"\(", " ", text)
+            text = re.sub(r"\)", " ", text)
             # From Chongjia Ni
             if kana:
-                line_arr[1] = safe_ja_g2p(line_arr[1], kana=True, max_length=100)
+                text = safe_ja_g2p(
+                    text,
+                    kana=True,
+                    max_length=100,
+                    jtalk=jtalk,
+                )
 
-            line_arr = f"{key}\t{line_arr[1]}".split()
+            line_arr = f"{key}\t{text}".split()
             conts = []
             language_bak = ""
             part = []
@@ -126,10 +185,49 @@ def normalize_text(srcfn, dstfn, kana=False):
                         out_part = zhconv.convert(out_part3, "zh-cn")
                     conts.append(out_part)
 
-            f_write.write("{0}\t{1}\n".format(key, " ".join(conts).strip()))
+            f_write.write("{}\t{}\n".format(key, " ".join(conts).strip()))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Normalize utterance-id/text files before ASR scoring."
+    )
+    parser.add_argument("srcfn", help="input file: utterance-id followed by text")
+    parser.add_argument("dstfn", help="normalized output file")
+    parser.add_argument(
+        "legacy_ja_norm",
+        nargs="?",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--language",
+        choices=("auto", "ja"),
+        default="auto",
+        help="use OpenJTalk kana normalization for Japanese",
+    )
+    parser.add_argument(
+        "--open-jtalk-dict",
+        help="optional OpenJTalk dictionary directory containing sys.dic",
+    )
+    parser.add_argument(
+        "--input-format",
+        choices=("id-text", "path-id-text"),
+        default="id-text",
+        help="input columns: 'utterance-id text' or 'audio-path utterance-id text'",
+    )
+    args = parser.parse_args()
+
+    kana = args.language == "ja" or args.legacy_ja_norm is not None
+    if args.open_jtalk_dict and not kana:
+        parser.error("--open-jtalk-dict requires --language ja")
+    normalize_text(
+        args.srcfn,
+        args.dstfn,
+        kana=kana,
+        open_jtalk_dict=args.open_jtalk_dict,
+        input_format=args.input_format,
+    )
 
 
 if __name__ == "__main__":
-    srcfn = sys.argv[1]
-    dstfn = sys.argv[2]
-    normalize_text(srcfn, dstfn, True if len(sys.argv) > 3 else False)
+    main()

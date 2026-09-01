@@ -112,3 +112,11 @@ python tools/whisper_mix_normalize.py output.txt output_norm.txt
 compute-wer data/val_norm.txt output_norm.txt cer.txt
 tail -n8 cer.txt
 ```
+
+日语评测需要先用 OpenJTalk 将参考文本和识别结果统一转换为片假名字符序列，再计算
+CER。完整用法及固定词典版本的方法见
+[Japanese CER evaluation](japanese_cer.md)：
+
+```bash
+python tools/compute_ja_cer.py data/val_text.txt output.txt japanese_cer.txt
+```
