@@ -2,7 +2,9 @@
 
 「[简体中文](README_zh.md)」|「[English](README.md)」|「[日本語](README_ja.md)」|「한국어」
 
-> **FunASR 1.3.28:** 실시간 WebSocket 서버는 VAD로 확정된 최종 디코딩 결과가 나빠질 때 안정적인 텍스트를 유지하고, `STOP` 수신 시 짧은 끝부분 오디오를 디코딩하며, 연결 종료를 명시적으로 처리합니다. `pip install -U "funasr==1.3.28"`로 설치하세요. [릴리스 노트](https://github.com/modelscope/FunASR/releases/tag/v1.3.28) · [배포 가이드](https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html) · [PyPI](https://pypi.org/project/funasr/1.3.28/)
+> **FunASR 1.4.12:** audio compute가 FP16일 때 Fun-ASR-Nano vLLM 출력을 안정화합니다. Qwen3 decoder는 BF16을 사용하며 BF16 미지원 GPU에서는 FP32를 사용하세요. `pip install -U "funasr==1.4.12"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.12) · [Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3)
+
+> **MOSS-Transcribe-Diarize:** OpenMOSS의 서드파티 모델로 오프라인 장시간 전사, timestamp, 익명 speaker label을 한 번에 처리합니다. FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, FunClip 배포 경로를 사용할 수 있습니다. [MOSS 배포 ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 
 Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인식 모델 제품군입니다. 체크포인트별 지원 범위가 다릅니다. Fun-ASR-Nano-2512는 중국어·영어·일본어와 중국어 방언·지역 억양을 지원하고, Fun-ASR-MLT-Nano-2512는 31개 언어를 지원합니다. 두 체크포인트 모두 FunASR에서 추론과 서빙에 사용할 수 있습니다.
 

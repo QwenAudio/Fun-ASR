@@ -36,12 +36,9 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 
 # 最新动态 🔥
 
-- 2026/07：**FunASR 1.3.28 提升实时转写稳定性** — WebSocket 服务会在 VAD 锁定的最终解码发生退化时保留稳定文本，在收到 `STOP` 后解码短尾音频，并显式处理连接关闭。安装命令：`pip install -U "funasr==1.3.28"`。[发布说明](https://github.com/modelscope/FunASR/releases/tag/v1.3.28) · [部署指南](https://www.funasr.com/blog/funasr-v1-3-28-realtime-websocket-subtitles.html) · [PyPI](https://pypi.org/project/funasr/1.3.28/)
-- 2026/07：**FunASR 1.3.27 提升 Fun-ASR-Nano 服务可靠性** — vLLM 启动失败后，OpenAI 兼容服务会复用同一个 `AutoModel` 缓存回退，而不是重复构建模型；vLLM/VAD 部分初始化失败后仍可重试。安装命令：`pip install -U "funasr==1.3.27"`。[发布说明](https://github.com/modelscope/FunASR/releases/tag/v1.3.27) · [部署指南](https://www.funasr.com/blog/funasr-v1-3-27-language-metadata-vllm-fallback.html) · [PyPI](https://pypi.org/project/funasr/1.3.27/)
-- 2026/07: **Hugging Face Transformers 原生集成正在审查中** — Fun-ASR-Nano 模型实现进度见 [transformers#46180](https://github.com/huggingface/transformers/pull/46180)。在正式进入 Transformers release 前，请使用下方 FunASR、[vLLM](docs/vllm_guide_zh.md) 或 [llama.cpp / GGUF](./runtime/llama.cpp/) 路径完成可运行推理。
-- 2026/06: **Fun-ASR-Nano on llama.cpp / GGUF** — 支持在 CPU/边缘设备上以单个自包含二进制运行（类似 whisper.cpp），内置 VAD，运行时无需 Python。量化模型最小约 484 MB。[runtime/llama.cpp/](./runtime/llama.cpp/) · [Releases](https://github.com/QwenAudio/Fun-ASR/releases) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
-- 2026/05: **vLLM 推理引擎** — 原生高吞吐批量推理（3-5 倍加速）+ WebSocket 实时流式服务。参见 [vLLM 指南](docs/vllm_guide.md)。
-- 2026/05: FunASR pipeline 可将 Fun-ASR-Nano 与独立的 FSMN-VAD、CAM++ 和标点模型组合，生成逐句说话人标签；说话人分离并非 Nano checkpoint 的原生输出。需从源码安装 FunASR：`pip install git+https://github.com/modelscope/FunASR.git`
+- **FunASR 1.4.12** 在音频计算使用 FP16 时稳定 Fun-ASR-Nano 的 vLLM 输出：Qwen3 decoder 使用 BF16；不支持 BF16 的 GPU 请使用 FP32。安装命令：`pip install -U "funasr==1.4.12"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.12)
+- **MOSS-Transcribe-Diarize** 是 OpenMOSS 的第三方模型，可离线完成长音频转写、时间戳和匿名说话人标签；FunASR 已提供服务、Docker、Kubernetes、vLLM、SGLang、LocalAI 与 FunClip 部署路径。[部署 MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
+- **工业部署** 覆盖实时 WebSocket 服务、原生 vLLM 批量/流式路径，以及已校验的 Linux、macOS、Windows llama.cpp / GGUF 包。[Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3) · [vLLM 指南 ->](docs/vllm_guide_zh.md)
 - 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) 上线，支持中文、英文、日文及中文方言和地域口音。31 语种识别请使用独立的 [Fun-ASR-MLT-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) checkpoint。
 - 2024/7: [FunASR](https://github.com/modelscope/FunASR) 是一款功能全面的语音识别基础工具包，集成了多项核心功能，包括自动语音识别（ASR）、语音活动检测（VAD）、标点恢复、语言模型、说话人验证、说话人日志记录以及多说话人语音识别。
 
