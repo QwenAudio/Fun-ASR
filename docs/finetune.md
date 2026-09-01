@@ -112,3 +112,11 @@ python tools/whisper_mix_normalize.py output.txt output_norm.txt
 compute-wer data/val_norm.txt output_norm.txt cer.txt
 tail -n8 cer.txt
 ```
+
+For Japanese, normalize both files to katakana with OpenJTalk before computing
+CER. The one-command workflow and reproducibility options are documented in
+[Japanese CER evaluation](japanese_cer.md):
+
+```bash
+python tools/compute_ja_cer.py data/val_text.txt output.txt japanese_cer.txt
+```
