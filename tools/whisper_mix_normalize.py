@@ -2,7 +2,6 @@
 """Normalize ASR transcripts before WER/CER scoring."""
 
 import argparse
-import os
 import re
 from pathlib import Path
 
@@ -44,27 +43,32 @@ def is_number(s):
 
 
 def configure_open_jtalk_dict(dict_dir):
-    """Configure an explicit OpenJTalk system dictionary directory."""
+    """Create an OpenJTalk frontend for an explicit system dictionary."""
     if dict_dir is None:
-        return
+        return None
 
-    dict_path = Path(dict_dir).expanduser().resolve()
+    dict_path = Path(dict_dir).expanduser().absolute()
     if not (dict_path / "sys.dic").is_file():
         raise RuntimeError(f"OpenJTalk dictionary is missing sys.dic: {dict_path}")
 
-    # pyopenjtalk reads this value when its global frontend is initialized.
-    os.environ["OPEN_JTALK_DICT_DIR"] = str(dict_path)
-    pyopenjtalk.OPEN_JTALK_DICT_DIR = str(dict_path).encode("utf-8")
+    # Do not mutate OPEN_JTALK_DICT_DIR or _global_jtalk. The package caches its
+    # global frontend after the first g2p call, so changing the global path can
+    # silently leave a previously initialized dictionary in use.
+    return pyopenjtalk.OpenJTalk(dn_mecab=str(dict_path).encode("utf-8"))
 
 
-def safe_ja_g2p(text, kana=True, max_length=100):
+def safe_ja_g2p(text, kana=True, max_length=100, jtalk=None):
     """Convert Japanese text with OpenJTalk and fail on conversion errors."""
+    g2p_kwargs = {"kana": kana}
+    if jtalk is not None:
+        g2p_kwargs["jtalk"] = jtalk
+
     if len(text) > max_length:
         parts = []
         for i in range(0, len(text), max_length):
             part = text[i : i + max_length]
             try:
-                converted = pyopenjtalk.g2p(part, kana=kana)
+                converted = pyopenjtalk.g2p(part, **g2p_kwargs)
                 parts.append(converted)
             except Exception as exc:
                 raise RuntimeError(
@@ -73,7 +77,7 @@ def safe_ja_g2p(text, kana=True, max_length=100):
         return " ".join(parts)
 
     try:
-        return pyopenjtalk.g2p(text, kana=kana)
+        return pyopenjtalk.g2p(text, **g2p_kwargs)
     except Exception as exc:
         raise RuntimeError(
             f"OpenJTalk failed to normalize Japanese text: {text[:80]!r}"
@@ -88,8 +92,7 @@ def normalize_text(
     input_format="id-text",
 ):
     """Normalize an utterance transcript file for ASR scoring."""
-    if kana:
-        configure_open_jtalk_dict(open_jtalk_dict)
+    jtalk = configure_open_jtalk_dict(open_jtalk_dict) if kana else None
     if input_format not in {"id-text", "path-id-text"}:
         raise ValueError(f"unsupported input format: {input_format}")
 
@@ -121,7 +124,12 @@ def normalize_text(
             text = re.sub(r"\)", " ", text)
             # From Chongjia Ni
             if kana:
-                text = safe_ja_g2p(text, kana=True, max_length=100)
+                text = safe_ja_g2p(
+                    text,
+                    kana=True,
+                    max_length=100,
+                    jtalk=jtalk,
+                )
 
             line_arr = f"{key}\t{text}".split()
             conts = []

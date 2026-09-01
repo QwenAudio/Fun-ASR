@@ -70,6 +70,37 @@ class JapaneseNormalizerTest(unittest.TestCase):
         ):
             whisper_mix_normalize.configure_open_jtalk_dict(temp_dir)
 
+    def test_explicit_dictionary_uses_dedicated_frontend_after_default_init(self):
+        # Reproduce the process-lifetime ordering that previously caused an
+        # explicit dictionary path to reuse pyopenjtalk's cached default
+        # frontend.
+        whisper_mix_normalize.pyopenjtalk.g2p("テスト", kana=True)
+        with whisper_mix_normalize.pyopenjtalk._global_jtalk() as default_jtalk:
+            default_jtalk_id = id(default_jtalk)
+
+        default_dict = Path(
+            whisper_mix_normalize.pyopenjtalk.OPEN_JTALK_DICT_DIR.decode("utf-8")
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            explicit_dict = Path(temp_dir) / "open_jtalk_dic_utf_8-1.11"
+            explicit_dict.symlink_to(default_dict, target_is_directory=True)
+            explicit_jtalk = whisper_mix_normalize.configure_open_jtalk_dict(
+                explicit_dict
+            )
+
+            self.assertNotEqual(default_jtalk_id, id(explicit_jtalk))
+            with mock.patch.object(
+                whisper_mix_normalize.pyopenjtalk,
+                "g2p",
+                wraps=whisper_mix_normalize.pyopenjtalk.g2p,
+            ) as g2p:
+                whisper_mix_normalize.safe_ja_g2p(
+                    "テスト",
+                    jtalk=explicit_jtalk,
+                )
+
+            self.assertIs(g2p.call_args.kwargs["jtalk"], explicit_jtalk)
+
 
 class JapaneseCerTest(unittest.TestCase):
     def test_runs_compute_wer_on_normalized_files(self):
