@@ -38,22 +38,20 @@ def test_docs_use_quoted_current_funasr_install_commands():
     assert (ROOT / "examples/README.md").read_text().count('"funasr>=1.3.26"') == 2
 
 
-def test_readmes_surface_funasr_1328_realtime_release():
+def test_readmes_surface_current_release_and_deployment_paths():
     required = [
-        "funasr==1.3.28",
-        "STOP",
-        "https://github.com/modelscope/FunASR/releases/tag/v1.3.28",
+        "funasr==1.4.12",
+        "https://github.com/modelscope/FunASR/releases/tag/v1.4.12",
+        "MOSS-Transcribe-Diarize",
+        "https://www.funasr.com/deploy/moss-transcribe-diarize.html",
+        "runtime-llamacpp-v0.2.3",
     ]
-    guides = {
-        "README.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
-        "README_zh.md": "https://www.funasr.com/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
-        "README_ja.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
-        "README_ko.md": "https://www.funasr.com/en/blog/funasr-v1-3-28-realtime-websocket-subtitles.html",
-    }
-    for relpath, guide in guides.items():
+    for relpath in ("README.md", "README_zh.md", "README_ja.md", "README_ko.md"):
         text = (ROOT / relpath).read_text()
-        for marker in [*required, guide]:
+        for marker in required:
             assert marker in text, f"{relpath} is missing {marker}"
+        assert "funasr==1.3.28" not in text
+        assert "funasr==1.3.27" not in text
 
 
 def test_docs_relative_markdown_links_point_to_existing_files():
