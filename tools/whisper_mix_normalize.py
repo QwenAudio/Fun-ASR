@@ -59,16 +59,18 @@ def configure_open_jtalk_dict(dict_dir):
 
 def safe_ja_g2p(text, kana=True, max_length=100, jtalk=None):
     """Convert Japanese text with OpenJTalk and fail on conversion errors."""
-    g2p_kwargs = {"kana": kana}
-    if jtalk is not None:
-        g2p_kwargs["jtalk"] = jtalk
+
+    def convert(part):
+        if jtalk is not None:
+            return jtalk.g2p(part, kana=kana)
+        return pyopenjtalk.g2p(part, kana=kana)
 
     if len(text) > max_length:
         parts = []
         for i in range(0, len(text), max_length):
             part = text[i : i + max_length]
             try:
-                converted = pyopenjtalk.g2p(part, **g2p_kwargs)
+                converted = convert(part)
                 parts.append(converted)
             except Exception as exc:
                 raise RuntimeError(
@@ -77,7 +79,7 @@ def safe_ja_g2p(text, kana=True, max_length=100, jtalk=None):
         return " ".join(parts)
 
     try:
-        return pyopenjtalk.g2p(text, **g2p_kwargs)
+        return convert(text)
     except Exception as exc:
         raise RuntimeError(
             f"OpenJTalk failed to normalize Japanese text: {text[:80]!r}"

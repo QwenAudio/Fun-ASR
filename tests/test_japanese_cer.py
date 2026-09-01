@@ -89,17 +89,27 @@ class JapaneseNormalizerTest(unittest.TestCase):
             )
 
             self.assertNotEqual(default_jtalk_id, id(explicit_jtalk))
-            with mock.patch.object(
-                whisper_mix_normalize.pyopenjtalk,
-                "g2p",
-                wraps=whisper_mix_normalize.pyopenjtalk.g2p,
-            ) as g2p:
+            self.assertEqual(
+                explicit_jtalk.g2p("テスト", kana=True),
                 whisper_mix_normalize.safe_ja_g2p(
                     "テスト",
                     jtalk=explicit_jtalk,
-                )
+                ),
+            )
 
-            self.assertIs(g2p.call_args.kwargs["jtalk"], explicit_jtalk)
+            long_text = "今日は晴れです。" * 20
+            expected_chunks = [
+                explicit_jtalk.g2p(long_text[i : i + 100], kana=True)
+                for i in range(0, len(long_text), 100)
+            ]
+            self.assertEqual(
+                " ".join(expected_chunks),
+                whisper_mix_normalize.safe_ja_g2p(
+                    long_text,
+                    max_length=100,
+                    jtalk=explicit_jtalk,
+                ),
+            )
 
 
 class JapaneseCerTest(unittest.TestCase):
