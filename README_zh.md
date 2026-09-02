@@ -39,8 +39,6 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 - **FunASR 1.4.13** 在音频计算使用 FP16 时稳定 Fun-ASR-Nano 的 vLLM 输出：Qwen3 decoder 使用 BF16；不支持 BF16 的 GPU 请使用 FP32。安装命令：`pip install -U "funasr==1.4.13"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.13)
 - **MOSS-Transcribe-Diarize** 是 OpenMOSS 的第三方模型，可离线完成长音频转写、时间戳和匿名说话人标签；FunASR 已提供服务、Docker、Kubernetes、vLLM、SGLang、LocalAI 与 FunClip 部署路径。[部署 MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 - **工业部署** 覆盖实时 WebSocket 服务、原生 vLLM 批量/流式路径，以及已校验的 Linux、macOS、Windows llama.cpp / GGUF 包。[Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3) · [vLLM 指南 ->](docs/vllm_guide_zh.md)
-- 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) 上线，支持中文、英文、日文及中文方言和地域口音。31 语种识别请使用独立的 [Fun-ASR-MLT-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) checkpoint。
-- 2024/7: [FunASR](https://github.com/modelscope/FunASR) 是一款功能全面的语音识别基础工具包，集成了多项核心功能，包括自动语音识别（ASR）、语音活动检测（VAD）、标点恢复、语言模型、说话人验证、说话人日志记录以及多说话人语音识别。
 
 # 核心特性 🎯
 

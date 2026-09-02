@@ -54,6 +54,18 @@ def test_readmes_surface_current_release_and_deployment_paths():
         assert "funasr==1.3.27" not in text
 
 
+def test_whats_new_excludes_historical_release_notes():
+    sections = {
+        "README.md": ("# What's New", "# Core Features"),
+        "README_zh.md": ("# 最新动态", "# 核心特性"),
+    }
+    for path, (start, end) in sections.items():
+        text = (ROOT / path).read_text()
+        whats_new = text.split(start, 1)[1].split(end, 1)[0]
+        assert "2025/12:" not in whats_new
+        assert "2024/7:" not in whats_new
+
+
 def test_docs_relative_markdown_links_point_to_existing_files():
     link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
     for relpath in DOCS:
