@@ -41,8 +41,6 @@ Online Experience:
 - **FunASR 1.4.13** stabilizes Fun-ASR-Nano vLLM output when audio compute uses FP16: the Qwen3 decoder uses BF16; use FP32 on GPUs without BF16 support. Install with `pip install -U "funasr==1.4.13"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.13)
 - **MOSS-Transcribe-Diarize** is a third-party OpenMOSS model for offline long-form transcription, timestamps, and anonymous speaker labels, with FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, and FunClip deployment paths. [Deploy MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 - **Production deployment** covers realtime WebSocket serving, native vLLM batch/streaming paths, and verified llama.cpp / GGUF packages for Linux, macOS, and Windows. [Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3) · [vLLM guide ->](docs/vllm_guide.md)
-- 2025/12: [Fun-ASR-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) was released for Chinese, English, Japanese, and Chinese dialects and accents. For 31-language recognition, use the separate [Fun-ASR-MLT-Nano-2512](https://modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) checkpoint.
-- 2024/7: [FunASR](https://github.com/modelscope/FunASR) is a fundamental speech recognition toolkit that offers a variety of features, including speech recognition (ASR), Voice Activity Detection (VAD), Punctuation Restoration, Language Models, Speaker Verification, Speaker Diarization and multi-talker ASR.
 
 # Core Features 🎯
 
