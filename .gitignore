@@ -6,3 +6,6 @@ dist/
 build/
 .eggs/
 *.tar.gz
+
+# regression models (downloaded, not committed)
+runtime/llama.cpp/tests/models/

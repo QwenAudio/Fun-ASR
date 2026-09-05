@@ -7,6 +7,13 @@
 // This is the whisper.cpp-style single-binary path: no Python at runtime.
 //
 //   funasr-cli --enc funasr-encoder.gguf -m qwen3-0.6b.gguf -a audio.wav
+//
+// Streaming (--stream): 16 kHz s16le mono PCM on stdin, models load once, emits
+//   LOCKED <text>   DynamicStreamingVAD-confirmed segment (committed, like python)
+//   PARTIAL <text>  unstable transcript of the in-progress segment (or empty when it ends)
+//   DONE            after stdin EOF + trailing-segment flush
+// Thresholds/protocol mirror serve_realtime_ws.py (RealtimeASRSession): 480ms first
+// decode, 960ms cadence, 15s partial window cap, 200/512 token budgets for partial/locked.
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -166,9 +173,224 @@ static int decode_batch(llama_context*ctx,int n,llama_token*tok,float*embd,int n
     int r=llama_decode(ctx,b); n_past+=n; return r;
 }
 
+// ---- encoder + LLM bundle, loaded once, reused per decode window ----
+struct asr_decoder {
+    enc_model em;
+    llama_model* model=nullptr;
+    const llama_vocab* vocab=nullptr;
+    llama_context* ctx=nullptr;
+    llama_sampler* smpl=nullptr;
+    std::vector<llama_token> pre, suf;
+};
+static void free_decoder(asr_decoder&d){
+    if(d.smpl) llama_sampler_free(d.smpl);
+    if(d.ctx) llama_free(d.ctx);
+    if(d.model) llama_model_free(d.model);
+    if(d.em.ctx_w) ggml_free(d.em.ctx_w);
+    d = asr_decoder{};
+}
+static bool load_decoder(const char*enc_path, const char*llm_path, float rep,
+                         const std::string&lang, asr_decoder&d){
+    if(!load_enc(enc_path,d.em)) return false;
+    ggml_backend_load_all();
+    llama_model_params mp=llama_model_default_params(); mp.n_gpu_layers=0;
+    d.model=llama_model_load_from_file(llm_path,mp); if(!d.model) return false;
+    d.vocab=llama_model_get_vocab(d.model);
+    llama_context_params cp=llama_context_default_params();
+    cp.n_ctx=2048; cp.n_batch=2048; cp.n_ubatch=2048;
+    d.ctx=llama_init_from_model(d.model,cp);
+    if(!d.ctx){fprintf(stderr,"failed to create llama context\n");return false;}
+    auto sp=llama_sampler_chain_default_params(); d.smpl=llama_sampler_chain_init(sp);
+    if(rep!=1.0f) llama_sampler_chain_add(d.smpl,llama_sampler_init_penalties(256,rep,0.0f,0.0f));
+    llama_sampler_chain_add(d.smpl,llama_sampler_init_greedy());
+    // prompt mirrors FunASRNano.get_prompt(): 语音转写：" / 语音转写成<lang>："
+    std::string prefix="<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n语音转写";
+    if(!lang.empty()) prefix+="成"+lang;
+    prefix+="：";
+    const char*suffix="<|im_end|>\n<|im_start|>assistant\n";
+    auto tokenize=[&](const std::string&s){int n=-llama_tokenize(d.vocab,s.c_str(),s.size(),nullptr,0,false,true);
+        std::vector<llama_token> v(n); llama_tokenize(d.vocab,s.c_str(),s.size(),v.data(),n,false,true); return v;};
+    d.pre=tokenize(prefix); d.suf=tokenize(suffix);
+    return true;
+}
+// Decode one 16k-mono window (seconds*16000 samples, [-1,1]) into text.
+static std::string asr_decode_window(asr_decoder&d, const float*pcm, size_t n, int npred){
+    std::vector<float> seg(pcm, pcm+n);
+    int T=0; auto fbank=compute_fbank(seg,T);
+    int D=0; auto adp=run_encoder(d.em,fbank,T,560,D);
+    int ol=1+(T-3+2)/2; ol=1+(ol-3+2)/2; int n_aud=(ol-1)/2+1;
+
+    llama_memory_clear(llama_get_memory(d.ctx), true);  // fresh context per chunk
+    int n_past=0;
+    decode_batch(d.ctx,d.pre.size(),d.pre.data(),nullptr,0,n_past,false);
+    decode_batch(d.ctx,n_aud,nullptr,adp.data(),D,n_past,false);
+    decode_batch(d.ctx,d.suf.size(),d.suf.data(),nullptr,0,n_past,true);
+    std::string out;
+    llama_token tk=llama_sampler_sample(d.smpl,d.ctx,-1);
+    for(int i=0;i<npred;i++){
+        if(llama_vocab_is_eog(d.vocab,tk))break;
+        char buf[256]; int k=llama_token_to_piece(d.vocab,tk,buf,sizeof(buf),0,true);
+        if(k>0) out.append(buf,k);
+        decode_batch(d.ctx,1,&tk,nullptr,0,n_past,true);
+        tk=llama_sampler_sample(d.smpl,d.ctx,-1);
+    }
+    return out;
+}
+
+// ---- text cleanup, mirroring serve_realtime_ws.py ----
+// _clean_asr_text(): strip <tags>, [brackets], a few artifact chars/tokens, collapse spaces.
+static std::string clean_asr_text(const std::string& in){
+    std::string s; s.reserve(in.size());
+    for(size_t i=0;i<in.size();){
+        char c=in[i];
+        if(c=='<'){ size_t e=in.find('>',i); if(e!=std::string::npos){ i=e+1; continue; } }
+        if(c=='['){ size_t e=in.find(']',i); if(e!=std::string::npos){ i=e+1; continue; } }
+        if(c==']'||c=='&'||c=='|'){ i++; continue; }
+        // full-width artifacts Ｏ(EF BC AF) ＆(EF BC 86) ｜(EF BD 9C)
+        if(i+2<in.size() && (unsigned char)in[i]==0xEF &&
+           (((unsigned char)in[i+1]==0xBC && ((unsigned char)in[i+2]==0xAF || (unsigned char)in[i+2]==0x86)) ||
+            ((unsigned char)in[i+1]==0xBD && (unsigned char)in[i+2]==0x9C))){ i+=3; continue; }
+        s+=c; i++;
+    }
+    auto erase_all=[&](const char*sub){ size_t p; while((p=s.find(sub))!=std::string::npos) s.erase(p,strlen(sub)); };
+    erase_all("/sil"); erase_all("endofbreak"); erase_all("FFFF");
+    // collapse whitespace + trim
+    std::string t; t.reserve(s.size());
+    bool ws=false;
+    for(char c:s){ if(c==' '||c=='\t'||c=='\n'||c=='\r'||c=='\f'||c=='\v'){ ws=true; continue; }
+        if(ws && !t.empty()) t+=' '; ws=false; t+=c; }
+    return t;
+}
+// detect_and_fix_hallucination(): repeated word/char-ngram >= max_occurrences -> truncate
+// after the 2nd occurrence in the original text. Returns {text, hallucinated}.
+static std::pair<std::string,bool> fix_hallucination(const std::string& text, int max_ngram=12, int max_occ=3){
+    if(text.empty() || (int)text.size() < max_ngram*2) return {text,false};
+    std::string cleaned; cleaned.reserve(text.size());   // roughly \p{P} removal (ASCII punct)
+    for(char c:text) if(!ispunct((unsigned char)c)) cleaned+=c;
+    auto has_nondigit=[&](const std::string&w){ for(char c:w) if(!isdigit((unsigned char)c)) return true; return false; };
+    std::string repeated;
+    // word level: same whitespace-separated token repeated >= max_occ times consecutively
+    {
+        std::vector<std::string> ws; size_t b=0;
+        for(size_t i=0;i<=cleaned.size();i++) if(i==cleaned.size()||cleaned[i]==' '||cleaned[i]=='\t'){
+            if(i>b)ws.push_back(cleaned.substr(b,i-b)); b=i+1; }
+        for(size_t i=0,j;i<ws.size();i++){ for(j=i+1;j<=ws.size();j++){
+            if(j<ws.size()){
+                std::string a=ws[i],c=ws[j]; for(auto&x:a)x=tolower(x); for(auto&x:c)x=tolower(x);
+                if(a==c)continue;
+            }
+            // run [i,j) of identical tokens ended; python: {max_occurrences-1,} repeats
+            // after the first -> trigger at >= max_occurrences total occurrences
+            if(j-i>=(size_t)max_occ && has_nondigit(ws[i])){ repeated=ws[i]; break; }
+            i=j-1; break;
+        } if(!repeated.empty())break; }
+    }
+    // char-ngram level: L-length block repeated >= max_occ times inside a whitespace-free run
+    for(int L=1; repeated.empty() && L<max_ngram; L++){
+        for(size_t r0=0; r0<cleaned.size() && repeated.empty();){
+            size_t r1=cleaned.find_first_of(" \t",r0); if(r1==std::string::npos)r1=cleaned.size();
+            for(size_t i=r0; i+ (size_t)max_occ*L <= r1; i++){
+                bool ok=true, digit_only=true;
+                for(int k=1;k<max_occ;k++) if(cleaned.compare(i,L,cleaned,i+(size_t)k*L,L)!=0){ok=false;break;}
+                if(ok){ for(int k=0;k<L;k++) if(!isdigit((unsigned char)cleaned[i+k])) digit_only=false;
+                    if(!digit_only) repeated=cleaned.substr(i,L); break; }
+            }
+            r0=r1+1;
+        }
+    }
+    if(repeated.empty()) return {text,false};
+    size_t p1=text.find(repeated);
+    if(p1!=std::string::npos){
+        size_t p2=text.find(repeated,p1+repeated.size());
+        if(p2!=std::string::npos) return {text.substr(0,p2+repeated.size()),true};
+    }
+    return {text.substr(0,text.size()/2),true};
+}
+
+// ---- streaming mode (--stream): 16k s16le PCM on stdin -> LOCKED/PARTIAL/DONE on stdout ----
+// Protocol and thresholds mirror serve_realtime_ws.py's RealtimeASRSession:
+//   chunk_ms=960 cadence (first decode at 480ms), partial window capped at 15s of the
+//   in-progress VAD segment, locked segments = DynamicStreamingVAD-confirmed segments.
+static void emit_line(const char*tag, const std::string&text){
+    std::string t=text;
+    for(auto&c:t) if(c=='\n'||c=='\r') c=' ';
+    if(t.empty()) printf("%s\n",tag);          // DONE, and empty PARTIAL (partial reset)
+    else printf("%s %s\n",tag,t.c_str());
+    fflush(stdout);
+}
+static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg){
+    const size_t SR=16000;
+    const size_t ANALYSIS=960;            // 60ms VAD/partial analysis quantum
+    const size_t FIRST_CHUNK=SR*480/1000, CHUNK=SR*960/1000;   // decode cadence
+    const size_t PARTIAL_WIN=SR*15;       // 15s partial window cap
+    const size_t MIN_PARTIAL=CHUNK/2, MIN_LOCKED=1600;         // python: chunk//2 / 100ms
+    funasr_vad_stream*vs=funasr_vad_stream_open(vad_path.c_str(),vad_maxseg);
+    std::vector<float> wav;               // full session audio (64KB/s, fine)
+    size_t analyzed=0, last_decode=0; bool first_done=false;
+    std::string last_partial;
+    for(;;){
+        unsigned char blk[16384]; size_t got=fread(blk,1,sizeof blk,stdin);
+        bool eof=(got<sizeof blk);
+        // s16le -> f32 (carry an odd byte across reads)
+        static unsigned char carry=0; static bool have_carry=false;
+        size_t i0=0;
+        if(have_carry && got>=1){ short v=(short)((blk[0]<<8)|carry); wav.push_back(v/32768.0f); have_carry=false; i0=1; }
+        size_t n=(got-i0)/2; size_t base=wav.size(); wav.resize(base+n);
+        for(size_t i=0;i<n;i++){ unsigned char b0=blk[i0+2*i], b1=blk[i0+2*i+1];
+            wav[base+i]=((short)((b1<<8)|b0))/32768.0f; }
+        if(i0+2*n<got){ carry=blk[i0+2*n]; have_carry=true; }
+        // quantized analysis checkpoints: VAD emission + locked/partial decode decisions
+        // depend only on buffer contents at 60ms-quantized positions, not on pipe read size.
+        while(analyzed+ANALYSIS<=wav.size() || (eof && analyzed<wav.size())){
+            size_t prev=analyzed;
+            analyzed=std::min(analyzed+ANALYSIS, wav.size());
+            std::vector<std::pair<int,int>> new_segs;
+            if(!funasr_vad_stream_feed(vs,wav.data()+prev,analyzed-prev,new_segs)){fprintf(stderr,"vad failed\n");funasr_vad_stream_close(vs);return 1;}
+            for(auto&s:new_segs){                       // DynamicStreamingVAD-confirmed segment -> LOCKED
+                size_t s0=(size_t)((int64_t)s.first*SR/1000), s1=(size_t)((int64_t)s.second*SR/1000);
+                if(s1>analyzed)s1=analyzed;
+                if(s1<=s0||s1-s0<MIN_LOCKED)continue;
+                std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,s1-s0,512));
+                if(text.empty())continue;
+                fprintf(stderr,"[stream] locked [%d,%dms] \"%s\"\n",s.first,s.second,text.c_str());
+                emit_line("LOCKED",text);
+                last_partial.clear();
+            }
+            // RealtimeASRSession.decode() emulation for the in-progress segment
+            if(analyzed<CHUNK)continue;
+            if(vs->in_speech_start_ms<0){ last_decode=analyzed;
+                if(!last_partial.empty()){ emit_line("PARTIAL",""); last_partial.clear(); }
+                continue; }
+            size_t threshold=first_done?CHUNK:FIRST_CHUNK;
+            if(analyzed-last_decode<threshold)continue;
+            size_t start=(size_t)((int64_t)vs->in_speech_start_ms*SR/1000);
+            if(start+PARTIAL_WIN<analyzed)start=analyzed-PARTIAL_WIN;   // cap partial window to 15s
+            if(analyzed-start<MIN_PARTIAL)continue;
+            std::string text=clean_asr_text(asr_decode_window(d,wav.data()+start,analyzed-start,200));
+            auto fixed=fix_hallucination(text); text=fixed.first;
+            last_decode=analyzed;
+            if(text!=last_partial){ emit_line("PARTIAL",text); last_partial=text; }
+            if(!text.empty()&&!first_done)first_done=true;
+        }
+        if(eof)break;
+    }
+    // STOP: force-decode any trailing in-progress segment (python decode(is_final=True))
+    if(vs->in_speech_start_ms>=0){
+        size_t s0=(size_t)((int64_t)vs->in_speech_start_ms*SR/1000);
+        if(wav.size()>s0&&wav.size()-s0>=MIN_LOCKED){
+            std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,wav.size()-s0,512));
+            if(!text.empty()){ fprintf(stderr,"[stream] locked [%d,%zums] \"%s\"\n",vs->in_speech_start_ms,
+                wav.size()*1000/SR,text.c_str()); emit_line("LOCKED",text); }
+        }
+    }
+    emit_line("DONE","");
+    funasr_vad_stream_close(vs);
+    return 0;
+}
+
 int main(int argc,char**argv){
-    std::string enc_path,llm_path,wav_path,vad_path; int npred=512; double chunk_sec=0; float rep=1.0f;
-    int vad_maxseg=30000;
+    std::string enc_path,llm_path,wav_path,vad_path,lang; int npred=512; double chunk_sec=0; float rep=1.0f;
+    int vad_maxseg=30000; bool stream=false;
     for(int i=1;i<argc;i++){
         if(!strcmp(argv[i],"--enc")&&i+1<argc)enc_path=argv[++i];
         else if(!strcmp(argv[i],"-m")&&i+1<argc)llm_path=argv[++i];
@@ -178,32 +400,27 @@ int main(int argc,char**argv){
         else if(!strcmp(argv[i],"--vad")&&i+1<argc)vad_path=argv[++i];
         else if(!strcmp(argv[i],"--vad-maxseg")&&i+1<argc)vad_maxseg=atoi(argv[++i]);
         else if(!strcmp(argv[i],"--rep")&&i+1<argc)rep=atof(argv[++i]);
-        else {fprintf(stderr,"usage: %s --enc enc.gguf -m llm.gguf -a audio.wav [-n npred] [--chunk sec] [--vad fsmn-vad.gguf [--vad-maxseg ms]]\n",argv[0]);return 1;}
+        else if(!strcmp(argv[i],"--lang")&&i+1<argc)lang=argv[++i];
+        else if(!strcmp(argv[i],"--stream"))stream=true;
+        else {fprintf(stderr,"usage: %s --enc enc.gguf -m llm.gguf (-a audio.wav | --stream) [-n npred] [--chunk sec] [--vad fsmn-vad.gguf [--vad-maxseg ms]] [--lang language]\n",argv[0]);return 1;}
     }
-    if(enc_path.empty()||llm_path.empty()||wav_path.empty()){fprintf(stderr,"missing args\n");return 1;}
+    if(enc_path.empty()||llm_path.empty()||(!stream&&wav_path.empty())){fprintf(stderr,"missing args\n");return 1;}
+    if(stream&&vad_path.empty()){fprintf(stderr,"--stream requires --vad fsmn-vad.gguf\n");return 1;}
 
     std::vector<float> wav;
-    if(!funasr_load_audio_16k_mono(wav_path.c_str(),wav)){fprintf(stderr,"failed to read audio\n");return 1;}
+    if(!stream){
+        if(!funasr_load_audio_16k_mono(wav_path.c_str(),wav)){fprintf(stderr,"failed to read audio\n");return 1;}
+    }
     int64_t t0=ggml_time_us();
 
-    enc_model em; if(!load_enc(enc_path.c_str(),em))return 1;
-    ggml_backend_load_all();
-    llama_model_params mp=llama_model_default_params(); mp.n_gpu_layers=0;
-    llama_model*model=llama_model_load_from_file(llm_path.c_str(),mp); if(!model)return 1;
-    const llama_vocab*vocab=llama_model_get_vocab(model);
-    llama_context_params cp=llama_context_default_params();
-    cp.n_ctx=2048; cp.n_batch=2048; cp.n_ubatch=2048;
-    llama_context*ctx=llama_init_from_model(model,cp);
-    if(!ctx){fprintf(stderr,"failed to create llama context\n");llama_model_free(model);return 1;}
-    auto sp=llama_sampler_chain_default_params(); llama_sampler*smpl=llama_sampler_chain_init(sp);
-    if(rep!=1.0f) llama_sampler_chain_add(smpl,llama_sampler_init_penalties(256,rep,0.0f,0.0f));
-    llama_sampler_chain_add(smpl,llama_sampler_init_greedy());
+    asr_decoder d;
+    if(!load_decoder(enc_path.c_str(),llm_path.c_str(),rep,lang,d)){free_decoder(d);return 1;}
 
-    const char*prefix="<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n语音转写：";
-    const char*suffix="<|im_end|>\n<|im_start|>assistant\n";
-    auto tokenize=[&](const char*s){int n=-llama_tokenize(vocab,s,strlen(s),nullptr,0,false,true);
-        std::vector<llama_token> v(n); llama_tokenize(vocab,s,strlen(s),v.data(),n,false,true); return v;};
-    auto pre=tokenize(prefix); auto suf=tokenize(suffix);
+    if(stream){
+        int rc=run_stream(d,vad_path,vad_maxseg);
+        free_decoder(d);
+        return rc;
+    }
 
     // Build the list of [offset,len] windows to transcribe (in samples).
     //   --vad : FSMN-VAD speech segments (single-binary front end, replaces fixed chunking)
@@ -211,7 +428,7 @@ int main(int argc,char**argv){
     std::vector<std::pair<int,int>> wins;   // {sample offset, sample len}
     if(!vad_path.empty()){
         std::vector<std::pair<int,int>> segs; // ms
-        if(!funasr_vad_segments(vad_path,wav,vad_maxseg,segs)){fprintf(stderr,"vad failed\n");return 1;}
+        if(!funasr_vad_segments(vad_path,wav,vad_maxseg,segs)){fprintf(stderr,"vad failed\n");free_decoder(d);return 1;}
         for(auto&s:segs){ int off=(int)((int64_t)s.first*16000/1000), end=(int)((int64_t)s.second*16000/1000);
             if(end>(int)wav.size())end=wav.size(); if(end-off>0) wins.push_back({off,end-off}); }
         fprintf(stderr,"[vad] %zu segments\n",wins.size());
@@ -223,29 +440,11 @@ int main(int argc,char**argv){
     for (auto& w : wins) {
         int off = w.first, len = w.second;
         if (len < WINLEN) continue;                    // too short for one frame
-        std::vector<float> seg(wav.begin()+off, wav.begin()+off+len);
-        int T=0; auto fbank=compute_fbank(seg,T);
-        int D=0; auto adp=run_encoder(em,fbank,T,560,D);
-        int ol=1+(T-3+2)/2; ol=1+(ol-3+2)/2; int n_aud=(ol-1)/2+1;
-
-        llama_memory_clear(llama_get_memory(ctx), true);  // fresh context per chunk
-        int n_past=0;
-        decode_batch(ctx,pre.size(),pre.data(),nullptr,0,n_past,false);
-        decode_batch(ctx,n_aud,nullptr,adp.data(),D,n_past,false);
-        decode_batch(ctx,suf.size(),suf.data(),nullptr,0,n_past,true);
-        llama_token tk=llama_sampler_sample(smpl,ctx,-1);
-        for(int i=0;i<npred;i++){
-            if(llama_vocab_is_eog(vocab,tk))break;
-            char buf[256]; int k=llama_token_to_piece(vocab,tk,buf,sizeof(buf),0,true);
-            if(k>0) full.append(buf,k);
-            decode_batch(ctx,1,&tk,nullptr,0,n_past,true);
-            tk=llama_sampler_sample(smpl,ctx,-1);
-        }
+        full += asr_decode_window(d, wav.data()+off, len, npred);
     }
     printf("%s\n", full.c_str());
     int64_t t2=ggml_time_us();
     fprintf(stderr,"[done] %.2fs ; chunk=%.0fs\n",(t2-t0)/1e6, chunk_sec);
-    llama_sampler_free(smpl); llama_free(ctx); llama_model_free(model);
-    if(em.ctx_w) ggml_free(em.ctx_w);
+    free_decoder(d);
     return 0;
 }

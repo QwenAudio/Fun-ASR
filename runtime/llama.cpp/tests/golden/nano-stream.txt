@@ -1,0 +1,6 @@
+PARTIAL 我想。
+PARTIAL 我想问。
+PARTIAL 我想问我在滨海。
+PARTIAL 我想问我在滨海新区有房。
+LOCKED 我想问我在滨海新区有房。
+DONE
