@@ -48,5 +48,40 @@ B=$(bin llama-funasr-sensevoice) && run_tool sensevoice llama-funasr-sensevoice 
 B=$(bin llama-funasr-paraformer) && run_tool paraformer llama-funasr-paraformer paraformer.txt paraformer paraformer-f16.gguf -- "$B" -m "$MODELS/paraformer-f16.gguf" -a "$SAMPLE"
 B=$(bin llama-funasr-cli)        && run_tool nano       llama-funasr-cli        nano.txt       nano       funasr-encoder-f16.gguf qwen3-0.6b-q8_0.gguf -- "$B" --enc "$MODELS/funasr-encoder-f16.gguf" -m "$MODELS/qwen3-0.6b-q8_0.gguf" -a "$SAMPLE"
 
+# streaming mode: simulate a realtime PCM stream (60ms chunks) and diff the whole
+# LOCKED/PARTIAL/DONE protocol trace against the frozen golden.
+B=$(bin llama-funasr-cli)
+if [ -n "$B" ]; then
+  if ensure_models nano funasr-encoder-f16.gguf qwen3-0.6b-q8_0.gguf fsmn-vad.gguf fsmn-vad.gguf; then
+    got=$(python3 "$DIR/wav2pcm.py" "$SAMPLE" --chunk-ms 60 | "$B" --enc "$MODELS/funasr-encoder-f16.gguf" -m "$MODELS/qwen3-0.6b-q8_0.gguf" --vad "$MODELS/fsmn-vad.gguf" --stream 2>"$DIR/.nano-stream.stderr")
+    check nano-stream "$DIR/golden/nano-stream.txt" "$got"
+    # invariant: the locked stream text, concatenated, equals the offline transcript
+    # (the streamed window includes the trailing-silence tail, which can legitimately
+    # add a trailing punctuation mark -- strip sentence-final punctuation on both sides)
+    locked=$(printf %s "$got" | grep '^LOCKED ' | sed 's/^LOCKED //' | tr -d '\n')
+    locked_n=$locked; expected_n=$(cat "$DIR/golden/nano.txt")
+    for punc in 。 . , ! ? ！ ？; do locked_n=${locked_n%"$punc"}; expected_n=${expected_n%"$punc"}; done
+    if [ "$locked_n" = "$expected_n" ]; then echo "  PASS  nano-stream-final"; pass=$((pass+1))
+    else echo "  FAIL  nano-stream-final"; echo "    expected: $expected_n"; echo "    got:      $locked_n"; fail=$((fail+1)); fi
+    # optional: segment boundaries vs python DynamicStreamingVAD (needs funasr+torch)
+    if [ "${ALIGN_PYTHON:-0}" = 1 ]; then
+      if python3 -c 'import funasr, torch' 2>/dev/null; then
+        if python3 "$DIR/align_streaming_vad.py" "$SAMPLE" --cpp "$DIR/.nano-stream.stderr"; then
+          echo "  PASS  nano-stream-align"; pass=$((pass+1))
+        else
+          echo "  FAIL  nano-stream-align"; fail=$((fail+1))
+        fi
+      else
+        skipper nano-stream-align "funasr/torch not installed"
+      fi
+      rm -f "$DIR/.nano-stream.stderr"
+    fi
+  else
+    skipper nano-stream "model missing (set RUN_FULL=1)"
+  fi
+else
+  skipper nano-stream "no binary"
+fi
+
 echo "== $pass passed, $fail failed, $skip skipped =="
 [ "$fail" = 0 ]

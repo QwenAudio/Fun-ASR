@@ -114,6 +114,21 @@ build/bin/llama-funasr-cli --enc funasr-encoder.gguf -m qwen3-0.6b-q8_0.gguf \
 of the PyTorch front end) and decodes each speech segment — closing the fixed-window gap
 (full-184 micro-CER **8.30**, vs 9.5 % with `--chunk 15`). See [BENCHMARKS.md](BENCHMARKS.md).
 
+**Realtime streaming (`--stream`, mirrors `serve_realtime_ws.py`):**
+```bash
+cat audio.pcm | build/bin/llama-funasr-cli \
+    --enc funasr-encoder.gguf -m qwen3-0.6b-q8_0.gguf --vad fsmn-vad.gguf --stream
+```
+stdin takes raw 16 kHz mono s16le PCM; the encoder/LLM/VAD load once and stay resident.
+stdout is a line protocol: `LOCKED <text>` when the streaming VAD confirms a segment
+(irreversible, decoded once), `PARTIAL <text>` refreshes of the in-progress segment,
+`DONE` after EOF flushes the trailing speech. Cadence and budgets follow the python
+`RealtimeASRSession` (first decode at 480 ms, then every 960 ms of audio; 15 s partial
+window cap; 200/512-token budgets for partial/locked decodes; DynamicStreamingVAD
+silence schedule). Segment boundaries align with `DynamicStreamingVAD` (see
+`tests/align_streaming_vad.py`), and `--lang <language>` maps to the
+`语音转写成<language>：` prompt variant.
+
 ## Models & sizes
 
 | file | dtype | size |

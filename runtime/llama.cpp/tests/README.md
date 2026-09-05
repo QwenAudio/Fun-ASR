@@ -9,9 +9,23 @@ state machine, the CIF predictor and CTC decode.
 # from runtime/llama.cpp/, after building (cmake --build build):
 ./tests/run_regression.sh              # VAD (tiny model auto-fetched) + any tool whose GGUF is already local
 RUN_FULL=1 ./tests/run_regression.sh   # also download the ASR GGUFs from Hugging Face and test every tool
+ALIGN_PYTHON=1 ./tests/run_regression.sh  # additionally align --stream VAD boundaries with
+                                         # python DynamicStreamingVAD (needs funasr + torch)
 ```
 `BIN_DIR` / `MODELS_DIR` override where binaries and GGUFs are found. Exit code is
 non-zero if any test fails; tools with no binary or no model are skipped.
+
+## Streaming (llama-funasr-cli --stream)
+
+`nano-stream` feeds `sample.wav` as raw s16le PCM (60ms chunks via `wav2pcm.py`) into
+`llama-funasr-cli --stream` and diffs the whole `LOCKED`/`PARTIAL`/`DONE` trace against
+`golden/nano-stream.txt`; `nano-stream-final` additionally asserts that the locked text,
+concatenated, equals the offline transcript (`golden/nano.txt`).
+
+`align_streaming_vad.py` cross-checks the streamed segment boundaries against FunASR's
+python `DynamicStreamingVAD` (the wrapper used by `serve_realtime_ws.py`) within 100ms,
+mirroring the realtime websocket server contract. It requires the `funasr` python package
+and torch (CPU is fine) and only runs under `ALIGN_PYTHON=1`.
 
 ## Golden
 Captured on Linux x86-64 (the reference platform) with the f16 GGUFs published at
