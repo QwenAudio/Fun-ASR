@@ -2,7 +2,7 @@
 
 「[简体中文](README_zh.md)」|「[English](README.md)」|「[日本語](README_ja.md)」|「한국어」
 
-> **FunASR 1.4.13:** audio compute가 FP16일 때 Fun-ASR-Nano vLLM 출력을 안정화합니다. Qwen3 decoder는 BF16을 사용하며 BF16 미지원 GPU에서는 FP32를 사용하세요. `pip install -U "funasr==1.4.13"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.13) · [Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3)
+> **FunASR 1.4.14:** 현재 Python 릴리스로 source install, MOSS 탐색 경로, realtime / industrial deployment를 제공합니다. `python -m pip install -U "funasr==1.4.14"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
 
 > **MOSS-Transcribe-Diarize:** OpenMOSS의 서드파티 모델로 오프라인 장시간 전사, timestamp, 익명 speaker label을 한 번에 처리합니다. FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, FunClip 배포 경로를 사용할 수 있습니다. [MOSS 배포 ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 

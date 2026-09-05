@@ -36,9 +36,9 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 
 # 最新动态 🔥
 
-- **FunASR 1.4.13** 在音频计算使用 FP16 时稳定 Fun-ASR-Nano 的 vLLM 输出：Qwen3 decoder 使用 BF16；不支持 BF16 的 GPU 请使用 FP32。安装命令：`pip install -U "funasr==1.4.13"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.13)
+- **FunASR 1.4.14** 是当前 Python 发布版，覆盖源码安装、MOSS 发现与实时/工业部署。安装命令：`python -m pip install -U "funasr==1.4.14"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14)
 - **MOSS-Transcribe-Diarize** 是 OpenMOSS 的第三方模型，可离线完成长音频转写、时间戳和匿名说话人标签；FunASR 已提供服务、Docker、Kubernetes、vLLM、SGLang、LocalAI 与 FunClip 部署路径。[部署 MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
-- **工业部署** 覆盖实时 WebSocket 服务、原生 vLLM 批量/流式路径，以及已校验的 Linux、macOS、Windows llama.cpp / GGUF 包。[Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3) · [vLLM 指南 ->](docs/vllm_guide_zh.md)
+- **工业部署** 覆盖实时 WebSocket 服务、原生 vLLM 批量/流式路径，以及已校验的 Linux、macOS、Windows llama.cpp / GGUF 包。[Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6) · [vLLM 指南 ->](docs/vllm_guide_zh.md)
 
 # 核心特性 🎯
 

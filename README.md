@@ -38,9 +38,9 @@ Online Experience:
 
 # What's New 🔥
 
-- **FunASR 1.4.13** stabilizes Fun-ASR-Nano vLLM output when audio compute uses FP16: the Qwen3 decoder uses BF16; use FP32 on GPUs without BF16 support. Install with `pip install -U "funasr==1.4.13"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.13)
+- **FunASR 1.4.14** is the current Python release for source installs, MOSS discovery, and realtime or industrial deployment. Install with `python -m pip install -U "funasr==1.4.14"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14)
 - **MOSS-Transcribe-Diarize** is a third-party OpenMOSS model for offline long-form transcription, timestamps, and anonymous speaker labels, with FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, and FunClip deployment paths. [Deploy MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
-- **Production deployment** covers realtime WebSocket serving, native vLLM batch/streaming paths, and verified llama.cpp / GGUF packages for Linux, macOS, and Windows. [Runtime v0.2.3 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.3) · [vLLM guide ->](docs/vllm_guide.md)
+- **Production deployment** covers realtime WebSocket serving, native vLLM batch/streaming paths, and verified llama.cpp / GGUF packages for Linux, macOS, and Windows. [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6) · [vLLM guide ->](docs/vllm_guide.md)
 
 # Core Features 🎯
 

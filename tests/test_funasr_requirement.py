@@ -40,11 +40,11 @@ def test_docs_use_quoted_current_funasr_install_commands():
 
 def test_readmes_surface_current_release_and_deployment_paths():
     required = [
-        "funasr==1.4.13",
-        "https://github.com/modelscope/FunASR/releases/tag/v1.4.13",
+        "funasr==1.4.14",
+        "https://github.com/modelscope/FunASR/releases/tag/v1.4.14",
         "MOSS-Transcribe-Diarize",
         "https://www.funasr.com/deploy/moss-transcribe-diarize.html",
-        "runtime-llamacpp-v0.2.3",
+        "runtime-llamacpp-v0.2.6",
     ]
     for relpath in ("README.md", "README_zh.md", "README_ja.md", "README_ko.md"):
         text = (ROOT / relpath).read_text()
@@ -52,6 +52,7 @@ def test_readmes_surface_current_release_and_deployment_paths():
             assert marker in text, f"{relpath} is missing {marker}"
         assert "funasr==1.3.28" not in text
         assert "funasr==1.3.27" not in text
+        assert "funasr==1.4.13" not in text
 
 
 def test_whats_new_excludes_historical_release_notes():
