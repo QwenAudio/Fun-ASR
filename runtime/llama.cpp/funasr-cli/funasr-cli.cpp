@@ -193,7 +193,14 @@ static bool load_decoder(const char*enc_path, const char*llm_path, float rep,
                          const std::string&lang, asr_decoder&d){
     if(!load_enc(enc_path,d.em)) return false;
     ggml_backend_load_all();
-    llama_model_params mp=llama_model_default_params(); mp.n_gpu_layers=0;
+    llama_model_params mp=llama_model_default_params();
+#if defined(__APPLE__)
+    // FunASR Nano's decoder is the realtime bottleneck on Apple Silicon. Offload
+    // every supported layer to Metal so streaming does not fall behind the input.
+    mp.n_gpu_layers=99;
+#else
+    mp.n_gpu_layers=0;
+#endif
     d.model=llama_model_load_from_file(llm_path,mp); if(!d.model) return false;
     d.vocab=llama_model_get_vocab(d.model);
     llama_context_params cp=llama_context_default_params();
@@ -309,7 +316,7 @@ static std::pair<std::string,bool> fix_hallucination(const std::string& text, in
 
 // ---- streaming mode (--stream): 16k s16le PCM on stdin -> LOCKED/PARTIAL/DONE on stdout ----
 // Protocol and thresholds mirror serve_realtime_ws.py's RealtimeASRSession:
-//   chunk_ms=960 cadence (first decode at 480ms), partial window capped at 15s of the
+//   partial decode every 3s (first decode at 1.6s), window capped at 8s of the
 //   in-progress VAD segment, locked segments = DynamicStreamingVAD-confirmed segments.
 static void emit_line(const char*tag, const std::string&text){
     std::string t=text;
@@ -318,11 +325,11 @@ static void emit_line(const char*tag, const std::string&text){
     else printf("%s %s\n",tag,t.c_str());
     fflush(stdout);
 }
-static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg){
+static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg, int npred){
     const size_t SR=16000;
     const size_t ANALYSIS=960;            // 60ms VAD/partial analysis quantum
-    const size_t FIRST_CHUNK=SR*480/1000, CHUNK=SR*960/1000;   // decode cadence
-    const size_t PARTIAL_WIN=SR*15;       // 15s partial window cap
+    const size_t FIRST_CHUNK=SR*1600/1000, CHUNK=SR*3000/1000; // decode cadence
+    const size_t PARTIAL_WIN=SR*8;        // recent context is enough for a preview
     const size_t MIN_PARTIAL=CHUNK/2, MIN_LOCKED=1600;         // python: chunk//2 / 100ms
     funasr_vad_stream*vs=funasr_vad_stream_open(vad_path.c_str(),vad_maxseg);
     std::vector<float> wav;               // full session audio (64KB/s, fine)
@@ -350,7 +357,8 @@ static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg)
                 size_t s0=(size_t)((int64_t)s.first*SR/1000), s1=(size_t)((int64_t)s.second*SR/1000);
                 if(s1>analyzed)s1=analyzed;
                 if(s1<=s0||s1-s0<MIN_LOCKED)continue;
-                std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,s1-s0,512));
+                std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,s1-s0,npred));
+                text=fix_hallucination(text).first;
                 if(text.empty())continue;
                 fprintf(stderr,"[stream] locked [%d,%dms] \"%s\"\n",s.first,s.second,text.c_str());
                 emit_line("LOCKED",text);
@@ -364,9 +372,10 @@ static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg)
             size_t threshold=first_done?CHUNK:FIRST_CHUNK;
             if(analyzed-last_decode<threshold)continue;
             size_t start=(size_t)((int64_t)vs->in_speech_start_ms*SR/1000);
-            if(start+PARTIAL_WIN<analyzed)start=analyzed-PARTIAL_WIN;   // cap partial window to 15s
+            if(start+PARTIAL_WIN<analyzed)start=analyzed-PARTIAL_WIN;   // cap partial window to 8s
             if(analyzed-start<MIN_PARTIAL)continue;
-            std::string text=clean_asr_text(asr_decode_window(d,wav.data()+start,analyzed-start,200));
+            std::string text=clean_asr_text(asr_decode_window(
+                d,wav.data()+start,analyzed-start,std::min(npred,64)));
             auto fixed=fix_hallucination(text); text=fixed.first;
             last_decode=analyzed;
             if(text!=last_partial){ emit_line("PARTIAL",text); last_partial=text; }
@@ -378,7 +387,8 @@ static int run_stream(asr_decoder&d, const std::string&vad_path, int vad_maxseg)
     if(vs->in_speech_start_ms>=0){
         size_t s0=(size_t)((int64_t)vs->in_speech_start_ms*SR/1000);
         if(wav.size()>s0&&wav.size()-s0>=MIN_LOCKED){
-            std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,wav.size()-s0,512));
+            std::string text=clean_asr_text(asr_decode_window(d,wav.data()+s0,wav.size()-s0,npred));
+            text=fix_hallucination(text).first;
             if(!text.empty()){ fprintf(stderr,"[stream] locked [%d,%zums] \"%s\"\n",vs->in_speech_start_ms,
                 wav.size()*1000/SR,text.c_str()); emit_line("LOCKED",text); }
         }
@@ -417,7 +427,7 @@ int main(int argc,char**argv){
     if(!load_decoder(enc_path.c_str(),llm_path.c_str(),rep,lang,d)){free_decoder(d);return 1;}
 
     if(stream){
-        int rc=run_stream(d,vad_path,vad_maxseg);
+        int rc=run_stream(d,vad_path,vad_maxseg,npred);
         free_decoder(d);
         return rc;
     }
