@@ -2,7 +2,7 @@
 
 「[简体中文](README_zh.md)」|「[English](README.md)」|「[日本語](README_ja.md)」|「한국어」
 
-> **FunASR 1.4.14:** 현재 Python 릴리스로 source install, MOSS 탐색 경로, realtime / industrial deployment를 제공합니다. `python -m pip install -U "funasr==1.4.14"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
+> **FunASR 1.4.15:** 현재 Python 릴리스로 source install, MOSS 탐색 경로, realtime / industrial deployment를 제공합니다. `python -m pip install -U "funasr==1.4.15"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.15) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
 
 > **MOSS-Transcribe-Diarize:** OpenMOSS의 서드파티 모델로 오프라인 장시간 전사, timestamp, 익명 speaker label을 한 번에 처리합니다. FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, FunClip 배포 경로를 사용할 수 있습니다. [MOSS 배포 ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 
@@ -27,7 +27,7 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 온라인 체험:
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_transformers.ipynb)
 
 [실행 가능한 예제](examples/README.md)는 quickstart 추론, 직접 추론, 화자 분리, vLLM 배치 추론, Streaming SDK를 다룹니다.
 
@@ -39,6 +39,46 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 | Fun-ASR-MLT-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)) | 중국어, 영어, 광둥어, 일본어, 한국어, 베트남어, 인도네시아어, 태국어, 말레이어, 필리핀어, 아랍어, 힌디어 등을 포함한 31개 언어 음성 인식. | 수십만 시간 | 8억 |
 
 CPU/엣지 환경에서는 Fun-ASR-Nano를 llama.cpp / GGUF 런타임으로 단일 바이너리 실행할 수 있습니다(Python/GPU 불필요, FSMN-VAD 내장). 이 GGUF 경로는 Nano의 중국어·영어·일본어 및 중국어 방언 범위에 해당하며, 한국어 인식은 위의 MLT-Nano/FunASR GPU 경로를 사용하세요. [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
+
+# Transformers 네이티브 빠른 시작
+
+정식 Transformers 5.17.0으로 음성을 전사합니다. FunASR toolkit 설치나 원격 Python 코드가 필요 없습니다. 기본 Nano는 중국어·영어·일본어를 지원하며 31개 언어의 MLT는 별도 checkpoint입니다.
+
+```bash
+python -m pip install 'transformers==5.17.0' 'torch==2.10.0' 'torchaudio==2.10.0' 'librosa==0.11.0' 'soundfile==0.13.1'
+```
+
+[Python 가이드](https://www.funasr.com/en/docs/native-transformers.html) · [로컬 오디오·배치·키워드](examples/transformers/) · [Notebook](examples/colab/fun_asr_nano_transformers.ipynb) · [Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
+
+```python
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+
+torch.set_num_threads(4)
+model_id = "FunAudioLLM/Fun-ASR-Nano-2512-hf"
+revision = "d93b302ee7fd505e1b3576120fc142fc6f7820e1"
+audio = "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/resolve/272c57b82523ada6fd87095e955f8e29100979ab/example/en.mp3"
+
+processor = AutoProcessor.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False
+)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False,
+    dtype=torch.float32,
+).to("cpu").eval()
+inputs = processor.apply_transcription_request(
+    audio=audio, language="en",
+    processor_kwargs={
+        "return_tensors": "pt",
+        "audio_kwargs": {"sampling_rate": 16000},
+        "text_kwargs": {"padding": True},
+    },
+)
+with torch.inference_mode():
+    generated = model.generate(**inputs, max_new_tokens=128, do_sample=False)
+new_tokens = generated[:, inputs.input_ids.shape[1]:]
+print(processor.batch_decode(new_tokens, skip_special_tokens=True)[0])
+```
 
 <a name="주요-기능"></a>
 

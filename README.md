@@ -23,7 +23,7 @@ Model repositories: **Fun-ASR-Nano** ([ModelScope](https://www.modelscope.cn/mod
 Online Experience:
 [ModelScope Community Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [huggingface space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_transformers.ipynb)
 
 [Runnable examples](examples/README.md) cover quickstart inference, direct inference, speaker diarization, vLLM batch inference, and the streaming SDK.
 
@@ -38,9 +38,49 @@ Online Experience:
 
 # What's New 🔥
 
-- **FunASR 1.4.14** is the current Python release for source installs, MOSS discovery, and realtime or industrial deployment. Install with `python -m pip install -U "funasr==1.4.14"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14)
+- **FunASR 1.4.15** is the current Python release for source installs, MOSS discovery, and realtime or industrial deployment. Install with `python -m pip install -U "funasr==1.4.15"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.15)
 - **MOSS-Transcribe-Diarize** is a third-party OpenMOSS model for offline long-form transcription, timestamps, and anonymous speaker labels, with FunASR service, Docker, Kubernetes, vLLM, SGLang, LocalAI, and FunClip deployment paths. [Deploy MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 - **Production deployment** covers realtime WebSocket serving, native vLLM batch/streaming paths, and verified llama.cpp / GGUF packages for Linux, macOS, and Windows. [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6) · [vLLM guide ->](docs/vllm_guide.md)
+
+# Native Transformers quickstart
+
+Transcribe with the released Transformers 5.17.0 package. No toolkit installation or remote Python code is needed. Base Nano supports Chinese, English and Japanese; the 31-language MLT checkpoint is separate.
+
+```bash
+python -m pip install 'transformers==5.17.0' 'torch==2.10.0' 'torchaudio==2.10.0' 'librosa==0.11.0' 'soundfile==0.13.1'
+```
+
+[Full Python recipe](https://www.funasr.com/en/docs/native-transformers.html) · [Local audio, batches and keywords](examples/transformers/) · [Notebook](examples/colab/fun_asr_nano_transformers.ipynb) · [Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
+
+```python
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+
+torch.set_num_threads(4)
+model_id = "FunAudioLLM/Fun-ASR-Nano-2512-hf"
+revision = "d93b302ee7fd505e1b3576120fc142fc6f7820e1"
+audio = "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/resolve/272c57b82523ada6fd87095e955f8e29100979ab/example/en.mp3"
+
+processor = AutoProcessor.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False
+)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False,
+    dtype=torch.float32,
+).to("cpu").eval()
+inputs = processor.apply_transcription_request(
+    audio=audio, language="en",
+    processor_kwargs={
+        "return_tensors": "pt",
+        "audio_kwargs": {"sampling_rate": 16000},
+        "text_kwargs": {"padding": True},
+    },
+)
+with torch.inference_mode():
+    generated = model.generate(**inputs, max_new_tokens=128, do_sample=False)
+new_tokens = generated[:, inputs.input_ids.shape[1]:]
+print(processor.batch_decode(new_tokens, skip_special_tokens=True)[0])
+```
 
 # Core Features 🎯
 

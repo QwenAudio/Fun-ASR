@@ -40,8 +40,8 @@ def test_docs_use_quoted_current_funasr_install_commands():
 
 def test_readmes_surface_current_release_and_deployment_paths():
     required = [
-        "funasr==1.4.14",
-        "https://github.com/modelscope/FunASR/releases/tag/v1.4.14",
+        "funasr==1.4.15",
+        "https://github.com/modelscope/FunASR/releases/tag/v1.4.15",
         "MOSS-Transcribe-Diarize",
         "https://www.funasr.com/deploy/moss-transcribe-diarize.html",
         "runtime-llamacpp-v0.2.6",

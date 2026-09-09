@@ -2,7 +2,7 @@
 
 「[简体中文](README_zh.md)」|「[English](README.md)」|「日本語」
 
-> **FunASR 1.4.14:** 現在の Python リリースで、source install、MOSS の導線、realtime / industrial deployment を提供します。`python -m pip install -U "funasr==1.4.14"`。[Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
+> **FunASR 1.4.15:** 現在の Python リリースで、source install、MOSS の導線、realtime / industrial deployment を提供します。`python -m pip install -U "funasr==1.4.15"`。[Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.15) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
 
 > **MOSS-Transcribe-Diarize:** OpenMOSS の第三者モデルで、オフライン長時間転写、timestamp、匿名 speaker label を一度に処理します。FunASR service、Docker、Kubernetes、vLLM、SGLang、LocalAI、FunClip のデプロイパスを利用できます。[MOSS をデプロイ ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 
@@ -27,7 +27,7 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 オンラインデモ：
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano)、[HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_quickstart.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QwenAudio/Fun-ASR/blob/main/examples/colab/fun_asr_nano_transformers.ipynb)
 
 [実行可能なサンプル](examples/README.md) では、クイックスタート推論、直接推論、話者分離、vLLM バッチ推論、Streaming SDK を確認できます。
 
@@ -39,6 +39,46 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 | Fun-ASR-MLT-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)) | 中・英・粤・日・韓、ベトナム語、インドネシア語、タイ語、マレー語、フィリピン語、アラビア語、ヒンディー語など31言語の音声認識。 | 数十万時間 | 8億 |
 
 CPU/エッジ端末では、Fun-ASR-Nano を llama.cpp / GGUF ランタイムで単一バイナリとして実行できます（Python/GPU 不要、内蔵 FSMN-VAD）。[funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
+
+# Transformers ネイティブクイックスタート
+
+リリース済み Transformers 5.17.0 で音声を文字起こしできます。FunASR toolkit やリモート Python コードは不要です。Nano は中国語・英語・日本語に対応し、31 言語の MLT は別 checkpoint です。
+
+```bash
+python -m pip install 'transformers==5.17.0' 'torch==2.10.0' 'torchaudio==2.10.0' 'librosa==0.11.0' 'soundfile==0.13.1'
+```
+
+[Python ガイド](https://www.funasr.com/en/docs/native-transformers.html) · [ローカル音声・バッチ・キーワード](examples/transformers/) · [Notebook](examples/colab/fun_asr_nano_transformers.ipynb) · [Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
+
+```python
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+
+torch.set_num_threads(4)
+model_id = "FunAudioLLM/Fun-ASR-Nano-2512-hf"
+revision = "d93b302ee7fd505e1b3576120fc142fc6f7820e1"
+audio = "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/resolve/272c57b82523ada6fd87095e955f8e29100979ab/example/en.mp3"
+
+processor = AutoProcessor.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False
+)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False,
+    dtype=torch.float32,
+).to("cpu").eval()
+inputs = processor.apply_transcription_request(
+    audio=audio, language="en",
+    processor_kwargs={
+        "return_tensors": "pt",
+        "audio_kwargs": {"sampling_rate": 16000},
+        "text_kwargs": {"padding": True},
+    },
+)
+with torch.inference_mode():
+    generated = model.generate(**inputs, max_new_tokens=128, do_sample=False)
+new_tokens = generated[:, inputs.input_ids.shape[1]:]
+print(processor.batch_decode(new_tokens, skip_special_tokens=True)[0])
+```
 
 <a name="主要機能"></a>
 

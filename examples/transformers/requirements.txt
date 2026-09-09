@@ -1,0 +1,8 @@
+transformers==5.17.0
+torch==2.10.0
+torchaudio==2.10.0
+numpy==1.26.4
+librosa==0.11.0
+soundfile==0.13.1
+huggingface-hub==1.30.0
+tokenizers==0.23.2

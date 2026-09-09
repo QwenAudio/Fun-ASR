@@ -1,7 +1,16 @@
 # Runnable examples
 
-These scripts mirror the main README snippets and are intended to run from a
-fresh clone. Install the base requirements first:
+## Native Transformers (start here for the Hugging Face API)
+
+Use the [native quickstart](transformers/) for the released `transformers==5.17.0`
+package and the official `Fun-ASR-Nano-2512-hf` checkpoint. It includes a tested
+CPU script, local audio, batching, keywords and an [upload notebook](colab/fun_asr_nano_transformers.ipynb).
+This path does not require the FunASR toolkit or repository-local remote code.
+
+## FunASR toolkit examples
+
+The remaining scripts use the original toolkit checkpoint and a separate
+environment. Install the base requirements for these scripts only:
 
 ```bash
 pip install -r requirements.txt
