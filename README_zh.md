@@ -36,9 +36,49 @@ Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 ch
 
 # 最新动态 🔥
 
-- **FunASR 1.4.14** 是当前 Python 发布版，覆盖源码安装、MOSS 发现与实时/工业部署。安装命令：`python -m pip install -U "funasr==1.4.14"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.14)
+- **FunASR 1.4.15** 是当前 Python 发布版，覆盖源码安装、MOSS 发现与实时/工业部署。安装命令：`python -m pip install -U "funasr==1.4.15"`。[发布说明 ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.15)
 - **MOSS-Transcribe-Diarize** 是 OpenMOSS 的第三方模型，可离线完成长音频转写、时间戳和匿名说话人标签；FunASR 已提供服务、Docker、Kubernetes、vLLM、SGLang、LocalAI 与 FunClip 部署路径。[部署 MOSS ->](https://www.funasr.com/deploy/moss-transcribe-diarize.html)
 - **工业部署** 覆盖实时 WebSocket 服务、原生 vLLM 批量/流式路径，以及已校验的 Linux、macOS、Windows llama.cpp / GGUF 包。[Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6) · [vLLM 指南 ->](docs/vllm_guide_zh.md)
+
+# Transformers 原生快速开始
+
+直接使用已发布的 Transformers 5.17.0，不需要安装 FunASR 工具库或执行模型仓库的远程 Python 代码。基础 Nano 支持中、英、日；31 语言 MLT 是另一个 checkpoint。
+
+```bash
+python -m pip install 'transformers==5.17.0' 'torch==2.10.0' 'torchaudio==2.10.0' 'librosa==0.11.0' 'soundfile==0.13.1'
+```
+
+[完整 Python 示例](https://www.funasr.com/docs/native-transformers.html) · [本地音频、批处理与热词](examples/transformers/) · [Notebook](examples/colab/fun_asr_nano_transformers.ipynb) · [Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
+
+```python
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+
+torch.set_num_threads(4)
+model_id = "FunAudioLLM/Fun-ASR-Nano-2512-hf"
+revision = "d93b302ee7fd505e1b3576120fc142fc6f7820e1"
+audio = "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/resolve/272c57b82523ada6fd87095e955f8e29100979ab/example/en.mp3"
+
+processor = AutoProcessor.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False
+)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(
+    model_id, revision=revision, trust_remote_code=False, token=False,
+    dtype=torch.float32,
+).to("cpu").eval()
+inputs = processor.apply_transcription_request(
+    audio=audio, language="en",
+    processor_kwargs={
+        "return_tensors": "pt",
+        "audio_kwargs": {"sampling_rate": 16000},
+        "text_kwargs": {"padding": True},
+    },
+)
+with torch.inference_mode():
+    generated = model.generate(**inputs, max_new_tokens=128, do_sample=False)
+new_tokens = generated[:, inputs.input_ids.shape[1]:]
+print(processor.batch_decode(new_tokens, skip_special_tokens=True)[0])
+```
 
 # 核心特性 🎯
 
