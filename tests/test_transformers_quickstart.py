@@ -16,6 +16,24 @@ SPEC.loader.exec_module(native)
 
 
 class NativeExampleTests(unittest.TestCase):
+    def test_pipeline_recipe_uses_registered_task_and_pinned_public_input(self):
+        guide = (ROOT / 'examples/transformers/README.md').read_text()
+        blocks = re.findall(r'<!-- native-example: pipeline -->\s*```python\n(.*?)```', guide, re.S)
+        self.assertEqual(len(blocks), 1, 'Missing unique runnable pipeline recipe')
+        tree = ast.parse(blocks[0])
+        calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)]
+        factory = next(n for n in calls if isinstance(n.func, ast.Name) and n.func.id == 'pipeline')
+        self.assertEqual(ast.literal_eval(factory.args[0]), 'any-to-any')
+        options = {kw.arg: kw.value for kw in factory.keywords}
+        self.assertEqual(ast.literal_eval(options['model']), native.MODEL_ID)
+        self.assertEqual(ast.literal_eval(options['revision']), native.REVISION)
+        self.assertEqual(ast.literal_eval(options['device']), 'cpu')
+        self.assertIs(ast.literal_eval(options['trust_remote_code']), False)
+        self.assertIs(ast.literal_eval(options['token']), False)
+        constants = {n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+        self.assertIn(f'https://huggingface.co/{native.SAMPLE_MODEL}/resolve/{native.SAMPLE_REVISION}/example/en.mp3', constants)
+        self.assertIn('automatic-speech-recognition', guide)
+
     def test_runtime_choices_fail_closed_without_silent_cpu_fallback(self):
         validate = getattr(native, 'validate_runtime', None)
         self.assertTrue(callable(validate), 'Explicit runtime validation is missing')
