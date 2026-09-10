@@ -22,7 +22,7 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 
 </h4>
 
-모델 저장소: **Fun-ASR-Nano**([ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512), [Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512), [GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF)) · **Fun-ASR-MLT-Nano**([ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512), [Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512))
+모델 저장소: **Fun-ASR-Nano**([ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512), [HF / Transformers](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512-hf) · [HF / FunASR](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512), [GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF)) · **Fun-ASR-MLT-Nano**([ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512), [Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512))
 
 온라인 체험:
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano), [HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
@@ -35,7 +35,7 @@ Fun-ASR는 통의(Tongyi) 실험실에서 개발한 엔드투엔드 음성 인�
 
 | 모델 | 지원 작업 | 학습 데이터 | 파라미터 |
 | :---: | :---: | :---: | :---: |
-| Fun-ASR-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)) | 중국어·영어·일본어 음성 인식. 중국어 7개 방언 + 26개 지역 억양 지원. 영어·일본어도 다양한 억양 대응. 가사 인식·랩 음성 인식 탑재. | 수천만 시간 | 8억 |
+| Fun-ASR-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) [HF / Transformers](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512-hf) · [HF / FunASR](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)) | 중국어·영어·일본어 음성 인식. 중국어 7개 방언 + 26개 지역 억양 지원. 영어·일본어도 다양한 억양 대응. 가사 인식·랩 음성 인식 탑재. | 수천만 시간 | 8억 |
 | Fun-ASR-MLT-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)) | 중국어, 영어, 광둥어, 일본어, 한국어, 베트남어, 인도네시아어, 태국어, 말레이어, 필리핀어, 아랍어, 힌디어 등을 포함한 31개 언어 음성 인식. | 수십만 시간 | 8억 |
 
 CPU/엣지 환경에서는 Fun-ASR-Nano를 llama.cpp / GGUF 런타임으로 단일 바이너리 실행할 수 있습니다(Python/GPU 불필요, FSMN-VAD 내장). 이 GGUF 경로는 Nano의 중국어·영어·일본어 및 중국어 방언 범위에 해당하며, 한국어 인식은 위의 MLT-Nano/FunASR GPU 경로를 사용하세요. [funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)

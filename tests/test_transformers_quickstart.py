@@ -3,9 +3,11 @@ import importlib.util
 import ast
 import json
 from pathlib import Path
+import re
 import unittest
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("native_example", ROOT / "examples/transformers/transcribe.py")
@@ -65,6 +67,26 @@ class NativeExampleTests(unittest.TestCase):
         for suffix, anchor, heading in [("_ja", "主要機能", "主要機能"), ("_ko", "주요-기능", "주요 기능")]:
             text = (ROOT / f"README{suffix}.md").read_text()
             self.assertIn(f'<a name="{anchor}"></a>\n\n# {heading}', text)
+
+
+@pytest.mark.parametrize("suffix", ["", "_zh", "_ja", "_ko"])
+@pytest.mark.parametrize("entry", ["directory", "table"])
+def test_model_download_entries_distinguish_native_and_toolkit(suffix, entry):
+    text = (ROOT / f"README{suffix}.md").read_text()
+    if entry == "directory":
+        line = next(line for line in text.splitlines()
+                    if "**Fun-ASR-Nano**" in line and "**Fun-ASR-MLT-Nano**" in line)
+        nano, mlt = line.split("**Fun-ASR-MLT-Nano**", 1)
+    else:
+        nano = next(line for line in text.splitlines()
+                    if line.startswith("|") and "Fun-ASR-Nano <br>" in line)
+        mlt = next(line for line in text.splitlines()
+                   if line.startswith("|") and "Fun-ASR-MLT-Nano" in line)
+    links = dict(re.findall(r"\[([^\]]+)\]\(([^)\s]+)\)", nano))
+    assert links.get("HF / Transformers") == "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512-hf"
+    assert links.get("HF / FunASR") == "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512"
+    assert "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512" in mlt
+    assert "Fun-ASR-Nano-2512-hf" not in mlt
 
 
 if __name__ == "__main__":
