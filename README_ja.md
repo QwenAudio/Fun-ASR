@@ -22,7 +22,7 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 
 </h4>
 
-モデルリポジトリ：**Fun-ASR-Nano**（[ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512)、[Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)、[GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF)） · **Fun-ASR-MLT-Nano**（[ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512)、[Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)）
+モデルリポジトリ：**Fun-ASR-Nano**（[ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512)、[HF / Transformers](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512-hf) · [HF / FunASR](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)、[GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF)） · **Fun-ASR-MLT-Nano**（[ModelScope](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512)、[Hugging Face](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)）
 
 オンラインデモ：
 [ModelScope Space](https://modelscope.cn/studios/FunAudioLLM/Fun-ASR-Nano)、[HuggingFace Space](https://huggingface.co/spaces/FunAudioLLM/Fun-ASR-Nano)
@@ -35,7 +35,7 @@ Fun-ASRは通義実験室が開発したエンドツーエンド音声認識モ�
 
 | モデル | 対応タスク | 学習データ | パラメータ |
 | :---: | :---: | :---: | :---: |
-| Fun-ASR-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)) | 中国語・英語・日本語の音声認識。中国語は7方言・26地域アクセント対応。英語・日本語も複数地域アクセントに対応。歌詞認識・ラップ音声認識も搭載。 | 数千万時間 | 8億 |
+| Fun-ASR-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-Nano-2512) [HF / Transformers](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512-hf) · [HF / FunASR](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512)) | 中国語・英語・日本語の音声認識。中国語は7方言・26地域アクセント対応。英語・日本語も複数地域アクセントに対応。歌詞認識・ラップ音声認識も搭載。 | 数千万時間 | 8億 |
 | Fun-ASR-MLT-Nano <br> ([⭐](https://www.modelscope.cn/models/FunAudioLLM/Fun-ASR-MLT-Nano-2512) [🤗](https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512)) | 中・英・粤・日・韓、ベトナム語、インドネシア語、タイ語、マレー語、フィリピン語、アラビア語、ヒンディー語など31言語の音声認識。 | 数十万時間 | 8億 |
 
 CPU/エッジ端末では、Fun-ASR-Nano を llama.cpp / GGUF ランタイムで単一バイナリとして実行できます（Python/GPU 不要、内蔵 FSMN-VAD）。[funasr.com/llama-cpp](https://www.funasr.com/llama-cpp.html) · [Nano GGUF](https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-GGUF) · [FSMN-VAD GGUF](https://huggingface.co/FunAudioLLM/fsmn-vad-GGUF)
