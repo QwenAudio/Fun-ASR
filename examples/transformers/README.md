@@ -35,6 +35,53 @@ contains `text` and `reached_eos: true`. No access token is required for this
 public checkpoint. The model itself also runs through the short, no-clone
 [Python recipe](https://www.funasr.com/en/docs/native-transformers.html).
 
+## Use the Transformers pipeline API
+
+After the CPU installation above, this Python example also works without a
+repository clone. Explicitly select **`any-to-any`**: it uses the native processor
+and the checkpoint's structured transcription chat template.
+
+<!-- native-example: pipeline -->
+```python
+from copy import deepcopy
+import torch
+from transformers import pipeline
+
+torch.set_num_threads(4)
+transcriber = pipeline(
+    "any-to-any",
+    model="FunAudioLLM/Fun-ASR-Nano-2512-hf",
+    revision="d93b302ee7fd505e1b3576120fc142fc6f7820e1",
+    device="cpu", dtype=torch.float32, trust_remote_code=False, token=False,
+)
+messages = [{"role": "user", "content": [
+    {"type": "audio", "url": "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512/resolve/272c57b82523ada6fd87095e955f8e29100979ab/example/en.mp3"},
+    {"type": "language", "language": "英文"},
+]}]
+generation_config = deepcopy(transcriber.model.generation_config)
+generation_config.update(max_new_tokens=128, do_sample=False, num_beams=1)
+result = transcriber(
+    text=messages, return_full_text=False,
+    generate_kwargs={"generation_config": generation_config},
+    processor_kwargs={"audio_kwargs": {"sampling_rate": 16000}},
+)
+print(result[0]["generated_text"])
+```
+
+For a local recording, replace the audio entry with
+`{"type": "audio", "path": "recording.wav"}`. In this checkpoint's chat template,
+the language field uses `中文`, `英文` or `日文`; the higher-level
+`apply_transcription_request` helper additionally accepts ISO codes.
+`return_full_text=False` excludes the input conversation from the generated text.
+
+On Transformers 5.17.0, `pipeline("automatic-speech-recognition", ...)` is a
+different processing path: our pinned-checkpoint test fails with a floating-point
+token-index error. Do not replace `any-to-any` with that task or rely on automatic
+task inference. The example above was checked on the public English sample with
+CPU float32; it is not a pipeline GPU/batching, accuracy or capacity evaluation.
+The 128-token limit is for this short sample, not a completeness guarantee. Use
+the CLI below for explicit audio limits and EOS diagnostics.
+
 ## Your recordings and batches
 
 ```bash
