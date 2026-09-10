@@ -54,6 +54,42 @@ per file. `keywords` and `prompt` are hints, not enforced vocabulary. Missing EO
 or empty text produces a nonzero exit after printing the diagnostic result.
 EOS is a generation boundary, not proof that every word was recognized.
 
+## CUDA: an isolated, tested recipe
+
+Use a separate environment for this GPU recipe; do not install the CPU
+requirements into it. It was functionally tested on Linux x86-64, Python 3.12,
+an NVIDIA H100 80 GB and driver **550.127.08**, with PyTorch/torchaudio
+**2.11.0+cu128** and Transformers **5.17.0**. Other GPU/driver combinations need
+their own validation.
+
+```bash
+python3.12 -m venv .venv-native-gpu
+. .venv-native-gpu/bin/activate
+python -m pip install --index-url https://download.pytorch.org/whl/cu128 'torch==2.11.0+cu128' 'torchaudio==2.11.0+cu128'
+python -m pip install -r examples/transformers/requirements-gpu.txt
+python -m pip check
+python examples/transformers/transcribe.py --device cuda --dtype float32
+python examples/transformers/transcribe.py chinese.wav english.wav --language zh en --device cuda --dtype bfloat16
+```
+
+The last command uses your local files. Without device flags, the CLI still uses
+CPU float32. CUDA requests fail if CUDA is unavailable; they never silently fall
+back to CPU. BF16 also requires device support. Model weights and processor
+tensors are moved to the selected device without converting integer token IDs
+to a floating dtype. JSON output records the actual device, dtype and versions.
+
+On 2026-09-10, both float32 and BF16 passed English, Chinese, Chinese with
+keywords, and padded Chinese/English batch inference using the pinned public
+samples. Outputs were nonempty and reached EOS. The Chinese sample still
+transcribed `开放时间` as `开饭时间`, including with the keyword hint; these checks
+do not establish accuracy or keyword benefit. They are not throughput, minimum
+VRAM or concurrency benchmarks. Float16 and other accelerators were not tested.
+
+Transformers emitted an attention-implementation warning in this environment.
+Successful inference does not verify the attention kernel of every component;
+this recipe makes no Flash Attention or all-SDPA performance claim. The online
+demo and notebook linked above do not imply a verified hosted GPU environment.
+
 ## Select a backend, not just a suffix
 
 | Need | Artifact and entry point |
@@ -66,8 +102,8 @@ EOS is a generation boundary, not proof that every word was recognized.
 The native `-hf` export produces transcription text. It does not add word
 timestamps, speaker identities, a streaming protocol or an HTTP server. The
 31-language MLT checkpoint is a separate model, not an alternate name for this
-zh/en/ja export. GPU dtype, attention kernels and throughput require separate
-hardware validation; the CPU sample is not a GPU benchmark.
+zh/en/ja export. The CUDA recipe above covers the stated functional cases only;
+attention kernels and serving throughput require separate hardware evaluation.
 
 ## Verification
 

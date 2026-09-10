@@ -1,4 +1,4 @@
-"""Native Transformers CPU example for short, authorized recordings."""
+"""Native Transformers example for short, authorized recordings; CPU by default."""
 import argparse
 import json
 from pathlib import Path
@@ -38,6 +38,17 @@ def languages_for_batch(languages, count):
     return languages * count if len(languages) == 1 else languages
 
 
+def validate_runtime(device, dtype, *, cuda_available=False, bf16_supported=False):
+    if device not in ("cpu", "cuda") or dtype not in ("float32", "bfloat16"):
+        raise ValueError("Choose cpu/cuda and float32/bfloat16 explicitly")
+    if device == "cpu" and dtype != "float32":
+        raise ValueError("This example supports float32 on CPU; use CUDA for bfloat16")
+    if device == "cuda" and not cuda_available:
+        raise ValueError("CUDA was requested but is unavailable; no CPU fallback")
+    if device == "cuda" and dtype == "bfloat16" and not bf16_supported:
+        raise ValueError("The selected CUDA device does not support bfloat16")
+
+
 def load_audio(path):
     import soundfile as sf
 
@@ -55,10 +66,17 @@ def main():
     parser.add_argument("--keywords", nargs="*", default=None)
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=256)
+    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+    parser.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
     args = parser.parse_args()
     if not 1 <= args.max_new_tokens <= 1024:
         parser.error("--max-new-tokens must be between 1 and 1024")
     languages = languages_for_batch(args.language, len(args.audio) or 1)
+    import torch
+
+    cuda_available = args.device == "cuda" and torch.cuda.is_available()
+    validate_runtime(args.device, args.dtype, cuda_available=cuda_available,
+                     bf16_supported=cuda_available and torch.cuda.is_bf16_supported())
     if not args.audio:
         from huggingface_hub import hf_hub_download
 
@@ -67,7 +85,6 @@ def main():
     if sum(len(item) for item in audio) > MAX_SECONDS * SAMPLE_RATE:
         raise ValueError("Keep total batch audio within 60 seconds for this example")
 
-    import torch
     import transformers
     from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 
@@ -75,13 +92,13 @@ def main():
     processor = AutoProcessor.from_pretrained(MODEL_ID, revision=REVISION, trust_remote_code=False, token=False)
     model = AutoModelForSpeechSeq2Seq.from_pretrained(
         MODEL_ID, revision=REVISION, trust_remote_code=False, token=False,
-        dtype=torch.float32,
-    ).to("cpu").eval()
+        dtype=getattr(torch, args.dtype),
+    ).to(args.device).eval()
     inputs = processor.apply_transcription_request(
         audio=audio, language=languages, keywords=args.keywords, prompt=args.prompt,
         processor_kwargs={"return_tensors": "pt", "audio_kwargs": {"sampling_rate": SAMPLE_RATE},
                           "text_kwargs": {"padding": True}},
-    )
+    ).to(args.device)
     with torch.inference_mode():
         generated = model.generate(**inputs, max_new_tokens=args.max_new_tokens, do_sample=False)
     new_tokens = generated[:, inputs.input_ids.shape[1]:]
@@ -93,7 +110,8 @@ def main():
         results.append({"file": str(path), "language": language, "text": text,
                         "reached_eos": any(token in eos_ids for token in tokens)})
     print(json.dumps({"model": MODEL_ID, "revision": REVISION, "transformers": transformers.__version__,
-                      "device": "cpu", "results": results}, ensure_ascii=False, indent=2))
+                      "torch": torch.__version__, "device": str(next(model.parameters()).device),
+                      "dtype": str(model.dtype), "results": results}, ensure_ascii=False, indent=2))
     if not all(row["reached_eos"] and row["text"].strip() for row in results):
         raise SystemExit("Incomplete generation: inspect empty text or missing EOS; do not treat this as a complete transcript")
 
