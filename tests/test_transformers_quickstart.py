@@ -16,6 +16,34 @@ SPEC.loader.exec_module(native)
 
 
 class NativeExampleTests(unittest.TestCase):
+    def test_runtime_choices_fail_closed_without_silent_cpu_fallback(self):
+        validate = getattr(native, 'validate_runtime', None)
+        self.assertTrue(callable(validate), 'Explicit runtime validation is missing')
+        validate('cpu', 'float32')
+        validate('cuda', 'float32', cuda_available=True)
+        validate('cuda', 'bfloat16', cuda_available=True, bf16_supported=True)
+        for device, dtype, available, bf16 in [
+            ('cuda', 'float32', False, False),
+            ('cuda', 'bfloat16', True, False),
+            ('cpu', 'bfloat16', False, False),
+            ('auto', 'float32', False, False),
+            ('cuda', 'float16', True, True),
+        ]:
+            with self.subTest(device=device, dtype=dtype), self.assertRaises(ValueError):
+                validate(device, dtype, cuda_available=available, bf16_supported=bf16)
+
+    def test_gpu_recipe_keeps_cpu_requirements_separate(self):
+        gpu = ROOT / 'examples/transformers/requirements-gpu.txt'
+        self.assertTrue(gpu.is_file())
+        requirements = gpu.read_text()
+        self.assertIn('torch==2.11.0+cu128', requirements)
+        self.assertIn('torchaudio==2.11.0+cu128', requirements)
+        self.assertIn('transformers==5.17.0', requirements)
+        self.assertIn('torch==2.10.0', (ROOT / 'examples/transformers/requirements.txt').read_text())
+        guide = (ROOT / 'examples/transformers/README.md').read_text()
+        for marker in ('--device cuda --dtype bfloat16', 'requirements-gpu.txt', 'H100', '550.127.08'):
+            self.assertIn(marker, guide)
+
     def test_fixed_native_artifact(self):
         self.assertEqual(native.MODEL_ID, "FunAudioLLM/Fun-ASR-Nano-2512-hf")
         self.assertEqual(native.REVISION, "d93b302ee7fd505e1b3576120fc142fc6f7820e1")
