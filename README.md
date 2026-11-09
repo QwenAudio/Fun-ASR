@@ -1,6 +1,6 @@
 # Fun-ASR
 
-「[简体中文](README_zh.md)」|「English」|「[日本語](README_ja.md)」|「[한국어](README_ko.md)」
+「[简体中文](README_zh.md)」|「English」|「[日本語](README_ja.md)」|「[한국어](README_ko.md)」|「[Tiếng Việt](README_vi.md)」
 
 Fun-ASR is a family of end-to-end speech recognition models from Tongyi Lab. Checkpoint capabilities are distinct: Fun-ASR-Nano-2512 is trained on tens of millions of hours of speech and supports Chinese, English, Japanese, and Chinese dialects and accents; Fun-ASR-MLT-Nano-2512 is an 800M multilingual checkpoint trained on hundreds of thousands of hours and supports 31 languages. Both checkpoints integrate with FunASR for inference and serving.
 

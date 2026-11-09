@@ -1,6 +1,6 @@
 # 微调
 
-「简体中文」|「[English](finetune.md)」
+「简体中文」|「[English](finetune.md)」|「[Tiếng Việt](finetune_vi.md)」
 
 ## 安装训练环境
 

@@ -1,6 +1,6 @@
 # Finetune
 
-「[简体中文](finetune_zh.md)」|「English」
+「[简体中文](finetune_zh.md)」|「English」|「[Tiếng Việt](finetune_vi.md)」
 
 ## Requirements
 
