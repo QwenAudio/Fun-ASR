@@ -1,6 +1,6 @@
 # Fun-ASR
 
-「[简体中文](README_zh.md)」|「[English](README.md)」|「[日本語](README_ja.md)」|「한국어」
+「[简体中文](README_zh.md)」|「[English](README.md)」|「[日本語](README_ja.md)」|「한국어」|「[Tiếng Việt](README_vi.md)」
 
 > **FunASR 1.4.15:** 현재 Python 릴리스로 source install, MOSS 탐색 경로, realtime / industrial deployment를 제공합니다. `python -m pip install -U "funasr==1.4.15"`. [Release ->](https://github.com/modelscope/FunASR/releases/tag/v1.4.15) · [Runtime v0.2.6 ->](https://github.com/modelscope/FunASR/releases/tag/runtime-llamacpp-v0.2.6)
 

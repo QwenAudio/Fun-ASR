@@ -1,6 +1,6 @@
 # Fun-ASR
 
-「简体中文」|「[English](README.md)」
+「简体中文」|「[English](README.md)」|「[Tiếng Việt](README_vi.md)」
 
 Fun-ASR 是通义实验室推出的端到端语音识别模型家族，不同 checkpoint 的能力范围不同：Fun-ASR-Nano-2512 基于数千万小时语音训练，支持中文、英文、日文及中文方言和地域口音；Fun-ASR-MLT-Nano-2512 是基于数十万小时多语种语音训练的 8 亿参数 checkpoint，支持 31 种语言。两者均可通过 FunASR 完成推理与服务部署。
 
