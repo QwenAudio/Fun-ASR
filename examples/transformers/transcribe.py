@@ -59,7 +59,19 @@ def load_audio(path):
     return prepare_audio(audio, sample_rate)
 
 
-def main():
+def looks_like_audio_path(keyword):
+    """Return whether a keyword has a path separator or an audio suffix."""
+    suffixes = (
+        ".wav", ".mp3", ".flac", ".ogg", ".m4a", ".opus", ".aac", ".wma",
+    )
+    return (
+        "/" in keyword
+        or "\\" in keyword
+        or keyword.lower().endswith(suffixes)
+    )
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("audio", nargs="*", type=Path, help="Local audio files; default: pinned official English sample")
     parser.add_argument("--language", nargs="+", default=["en"], choices=["zh", "en", "ja"])
@@ -68,10 +80,18 @@ def main():
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
     parser.add_argument("--dtype", choices=["float32", "bfloat16"], default="float32")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not 1 <= args.max_new_tokens <= 1024:
         parser.error("--max-new-tokens must be between 1 and 1024")
+    if not args.audio and any(
+        looks_like_audio_path(word) for word in args.keywords or []
+    ):
+        parser.error(
+            "--keywords consumed a possible audio path. "
+            "Put the file first or use -- before the filename."
+        )
     languages = languages_for_batch(args.language, len(args.audio) or 1)
+    audio = [load_audio(path) for path in args.audio]
     import torch
 
     cuda_available = args.device == "cuda" and torch.cuda.is_available()
@@ -81,7 +101,7 @@ def main():
         from huggingface_hub import hf_hub_download
 
         args.audio = [Path(hf_hub_download(SAMPLE_MODEL, "example/en.mp3", revision=SAMPLE_REVISION, token=False))]
-    audio = [load_audio(path) for path in args.audio]
+        audio = [load_audio(args.audio[0])]
     if sum(len(item) for item in audio) > MAX_SECONDS * SAMPLE_RATE:
         raise ValueError("Keep total batch audio within 60 seconds for this example")
 

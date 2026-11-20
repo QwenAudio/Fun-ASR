@@ -4,7 +4,9 @@ import ast
 import json
 from pathlib import Path
 import re
+import sys
 import unittest
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -133,6 +135,54 @@ def test_model_download_entries_distinguish_native_and_toolkit(suffix, entry):
     assert links.get("HF / FunASR") == "https://huggingface.co/FunAudioLLM/Fun-ASR-Nano-2512"
     assert "https://huggingface.co/FunAudioLLM/Fun-ASR-MLT-Nano-2512" in mlt
     assert "Fun-ASR-Nano-2512-hf" not in mlt
+
+
+@pytest.mark.parametrize("keywords", [["OpenAI", "recording.wav"], ["recording.wav"], ["dir/clip.wav"]])
+def test_keywords_swallowing_audio_are_rejected(keywords, monkeypatch):
+    hub = Mock()
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    monkeypatch.setitem(sys.modules, "torch", None)
+    with pytest.raises(SystemExit) as error:
+        native.main(["--keywords", *keywords])
+    assert error.value.code == 2
+    hub.hf_hub_download.assert_not_called()
+
+
+@pytest.mark.parametrize("argv", [
+    ["recording.wav", "--keywords", "OpenAI"],
+    ["recording.wav", "--keywords", "开放时间", "营业时间"],
+    ["--keywords", "OpenAI", "--", "recording.wav"],
+    ["--prompt", "test", "recording.wav"],
+])
+def test_cli_decodes_local_audio(argv, monkeypatch, tmp_path):
+    import soundfile as sf
+
+    monkeypatch.chdir(tmp_path)
+    sf.write("recording.wav", np.zeros(16000), 16000)
+    load_audio = native.load_audio
+
+    def check_audio(path):
+        assert path == Path("recording.wav")
+        assert load_audio(path).shape == (16000,)
+        raise StopIteration
+
+    monkeypatch.setattr(native, "load_audio", check_audio)
+    monkeypatch.setitem(sys.modules, "torch", None)
+    monkeypatch.setitem(sys.modules, "huggingface_hub", None)
+    with pytest.raises(StopIteration):
+        native.main(argv)
+
+
+@pytest.mark.parametrize("argv", [[], ["--keywords", "OpenAI"]])
+def test_cli_defaults_to_pinned_sample(argv, monkeypatch):
+    hub = Mock()
+    hub.hf_hub_download.side_effect = StopIteration
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    monkeypatch.setitem(sys.modules, "torch", Mock())
+    with pytest.raises(StopIteration):
+        native.main(argv)
+    hub.hf_hub_download.assert_called_once_with(
+        native.SAMPLE_MODEL, "example/en.mp3", revision=native.SAMPLE_REVISION, token=False)
 
 
 if __name__ == "__main__":
